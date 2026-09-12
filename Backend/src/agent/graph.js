@@ -1,5 +1,5 @@
 import { StateGraph, END, START, MessagesAnnotation } from '@langchain/langgraph';
-import { ChatGoogleGenerativeAI } from '@langchain/google-genai';
+import { ChatOllama } from '@langchain/ollama';
 import { ToolNode } from '@langchain/langgraph/prebuilt';
 import { SystemMessage, HumanMessage, RemoveMessage } from '@langchain/core/messages';
 import { createTools } from './tools.js';
@@ -8,12 +8,11 @@ export const createAgentGraph = async (nutritionService) => {
   const tools = createTools(nutritionService);
   const toolNode = new ToolNode(tools);
   
-  const model = new ChatGoogleGenerativeAI({
-    modelName: 'gemini-1.5-pro',
+  const model = new ChatOllama({
+    model: 'llama3.1',
     temperature: 0,
   }).bindTools(tools);
 
-  // Define custom state to hold a running summary and messages
   const AgentState = {
     messages: MessagesAnnotation.messages,
     summary: {
@@ -23,7 +22,6 @@ export const createAgentGraph = async (nutritionService) => {
   };
 
   const shouldSummarize = (state) => {
-    // If we have more than 6 messages, we summarize to save tokens
     if (state.messages.length > 6) {
       return "summarize_conversation";
     }
@@ -33,20 +31,17 @@ export const createAgentGraph = async (nutritionService) => {
   const summarizeConversation = async (state) => {
     const { messages, summary } = state;
     
-    // Create a prompt for summarization
     const summaryPrompt = `Distill the above chat messages into a single summary message. Include any user constraints, preferences, or goals mentioned. Extend the following existing summary: ${summary}`;
     
-    // We only summarize up to the last 2 messages to keep recent context intact
     const messagesToSummarize = messages.slice(0, -2);
     
-    const summarizationModel = new ChatGoogleGenerativeAI({
-      modelName: 'gemini-1.5-flash',
+    const summarizationModel = new ChatOllama({
+      model: 'llama3.1',
       temperature: 0,
     });
     
     const response = await summarizationModel.invoke([...messagesToSummarize, new HumanMessage(summaryPrompt)]);
     
-    // We remove the summarized messages from the state
     const deleteMessages = messagesToSummarize.map((m) => new RemoveMessage({ id: m.id }));
     
     return {
@@ -83,10 +78,8 @@ export const createAgentGraph = async (nutritionService) => {
     .addNode("agent", callModel)
     .addNode("tools", toolNode)
     .addNode("summarize_conversation", summarizeConversation)
-    
     .addConditionalEdges(START, shouldSummarize)
     .addEdge("summarize_conversation", "agent")
-    
     .addConditionalEdges("agent", shouldContinue)
     .addEdge("tools", "agent");
 
