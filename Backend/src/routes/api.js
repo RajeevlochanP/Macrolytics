@@ -7,6 +7,7 @@ export const createApiRouter = (authController, uploadController, aiController, 
   // Public Routes
   router.post('/auth/register', authController.register);
   router.post('/auth/login', authController.login);
+  router.post('/auth/logout', authController.logout);
 
   // Protected Routes
   router.use(authMiddleware);

@@ -1,5 +1,6 @@
 import express from 'express';
 import dotenv from 'dotenv';
+import cookieParser from 'cookie-parser';
 import db from './config/db.js';
 import redisClient from './config/redis.js';
 import s3Client from './config/s3.js';
@@ -31,6 +32,7 @@ dotenv.config();
 
 const app = express();
 app.use(express.json());
+app.use(cookieParser());
 
 // Dependency Injection Setup
 const nutritionDao = new NutritionDao();
