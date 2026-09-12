@@ -36,6 +36,7 @@ export default function Assistant() {
           'x-timezone': Intl.DateTimeFormat().resolvedOptions().timeZone
         },
         body: JSON.stringify({
+          messages: [...messages, { role: 'user', content: userMsg }],
           message: userMsg,
           encryptedContext: encryptedContext
         })

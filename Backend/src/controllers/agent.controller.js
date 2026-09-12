@@ -43,16 +43,24 @@ export default class AgentController {
   }
 
   serializeMessages(messages) {
-    return messages.map(m => {
-      const type = m._getType ? m._getType() : m.id ? m.id[m.id.length - 1].replace('Message', '').toLowerCase() : 'unknown';
-      return { type, content: m.content };
-    });
+    return messages
+      .filter(m => {
+        const type = m._getType ? m._getType() : m.id ? m.id[m.id.length - 1].replace('Message', '').toLowerCase() : 'unknown';
+        if (type === 'tool' || type === 'system') return false;
+        if (type === 'ai' && m.tool_calls && m.tool_calls.length > 0) return false;
+        if (type === 'ai' && typeof m.content === 'string' && m.content.trim().startsWith('{"')) return false;
+        return true;
+      })
+      .map(m => {
+        const type = m._getType ? m._getType() : m.id ? m.id[m.id.length - 1].replace('Message', '').toLowerCase() : 'unknown';
+        return { type, content: m.content };
+      });
   }
 
   chat = async (req, res) => {
     try {
       const userId = req.user?.id || '00000000-0000-0000-0000-000000000000';
-      const { message, encryptedContext } = req.body;
+      const { message, messages, encryptedContext } = req.body;
 
       if (!message) {
         return res.status(400).json({ error: 'message is required' });
@@ -61,8 +69,20 @@ export default class AgentController {
       const context = await this.decryptContext(encryptedContext);
       const preferences = await this.authService.getUserPreferences(userId);
 
-      const hydratedMessages = this.hydrateMessages(context.recentMessages);
-      hydratedMessages.push(new HumanMessage(message));
+      let hydratedMessages = [];
+      if (messages && Array.isArray(messages)) {
+        hydratedMessages = messages.map(m => {
+          if (m.role === 'user' || m.type === 'human') return new HumanMessage(m.content);
+          if (m.role === 'assistant' || m.type === 'ai') return new AIMessage(m.content);
+          if (m.role === 'system' || m.type === 'system') return new SystemMessage(m.content);
+          return new HumanMessage(m.content);
+        });
+      } else {
+        hydratedMessages = this.hydrateMessages(context.recentMessages);
+        if (message) {
+          hydratedMessages.push(new HumanMessage(message));
+        }
+      }
 
       res.setHeader('Content-Type', 'text/event-stream');
       res.setHeader('Cache-Control', 'no-cache');
@@ -77,15 +97,26 @@ export default class AgentController {
         timeZone
       };
 
-      const stream = await this.agent.streamEvents(inputState, { version: "v2" });
+      const stream = await this.agent.streamEvents(inputState, { 
+        version: "v2",
+        configurable: { userId, timeZone }
+      });
 
       let finalState = null;
 
+      let isLeakingJSON = false;
+
       for await (const event of stream) {
-        if (event.event === "on_chat_model_stream") {
-          const content = event.data.chunk.content;
-          if (content) {
-            res.write(`data: ${JSON.stringify({ token: content })}\n\n`);
+        if (event.event === "on_chat_model_stream" && event.metadata?.langgraph_node === "agent") {
+          const chunk = event.data.chunk;
+          const content = chunk.content;
+          
+          if (content && typeof content === 'string' && (!chunk.tool_call_chunks || chunk.tool_call_chunks.length === 0)) {
+            if (content.trim().startsWith('{"')) isLeakingJSON = true;
+            
+            if (!isLeakingJSON) {
+              res.write(`data: ${JSON.stringify({ token: content })}\n\n`);
+            }
           }
         } else if (event.event === "on_chain_end" && !event.name.includes("ChatOllama") && event.data.output?.messages) {
           // Capture the top-level workflow output which contains the updated state
