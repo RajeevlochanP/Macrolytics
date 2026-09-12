@@ -91,12 +91,10 @@ export const startWorker = () => {
   const worker = new Worker('nutrition-extraction', async job => {
     let localFilePath;
     try {
-      console.log(`\n[Job ${job.id}] --- STARTING PROCESSING ---`);
       const { userId, s3Key, mealType } = job.data;
 
       localFilePath = path.join(os.tmpdir(), `${job.id}.jpg`);
 
-      console.log(`[Job ${job.id}] 1. Fetching image from S3: ${s3Key}`);
       const s3Response = await s3Client.send(new GetObjectCommand({
         Bucket: process.env.S3_BUCKET_NAME,
         Key: s3Key
@@ -104,29 +102,23 @@ export const startWorker = () => {
 
       const fileBuffer = Buffer.from(await s3Response.Body.transformToByteArray());
       fs.writeFileSync(localFilePath, fileBuffer);
-      console.log(`[Job ${job.id}] 2. Image saved locally to ${localFilePath}`);
 
       await s3Client.send(new DeleteObjectCommand({
         Bucket: process.env.S3_BUCKET_NAME,
         Key: s3Key
       }));
-      console.log(`[Job ${job.id}] 3. Image deleted from S3`);
 
       const base64Data = fs.readFileSync(localFilePath).toString('base64');
       const base64Image = `data:image/jpeg;base64,${base64Data}`;
-      console.log(`[Job ${job.id}] 4. Converted to base64 (Length: ${base64Data.length})`);
 
       let finalState;
       try {
-        console.log(`[Job ${job.id}] 5. Invoking LangGraph / Ollama pipeline...`);
         finalState = await app.invoke({ base64Image });
-        console.log(`[Job ${job.id}] 6. LangGraph execution finished. isValid: ${finalState.isValid}`);
       } catch (err) {
         throw new Error(`Extraction failed during LLM invocation: ${err.message}`);
       }
 
       if (!finalState.isValid) {
-        console.log(`[Job ${job.id}] 7a. Validation failed, updating DB and Redis to FAILED state.`);
         await redisClient.hSet(`job:${job.id}`, {
           state: 'FAILED',
           failedReason: "Failed to analyze the image clearly. Please ensure the food is well-lit and clearly visible."
@@ -136,7 +128,6 @@ export const startWorker = () => {
       }
 
       const { extraction } = finalState;
-      console.log(`[Job ${job.id}] 7b. Validation passed. Updating DB with: ${extraction.item_name} (${extraction.calories} kcal)`);
 
       const query = `
         UPDATE food_entries 
@@ -169,19 +160,16 @@ export const startWorker = () => {
       const res = await db.query(query, values);
       const entry = res.rows[0];
 
-      console.log(`[Job ${job.id}] 8. Fetching timezone for Redis update...`);
       const jobData = await redisClient.hGetAll(`job:${job.id}`);
       const timeZone = jobData.timeZone || 'UTC';
       const dateStr = getLocalYMD(new Date(), timeZone);
 
-      console.log(`[Job ${job.id}] 9. Updating daily totals in Redis for date: ${dateStr}`);
       const redisKey = `nutrition:daily:${userId}:${dateStr}`;
       await redisClient.hIncrByFloat(redisKey, 'calories', entry.calories);
       await redisClient.hIncrByFloat(redisKey, 'protein', entry.protein);
       await redisClient.hIncrByFloat(redisKey, 'carbs', entry.carbs);
       await redisClient.hIncrByFloat(redisKey, 'fat', entry.fat);
 
-      console.log(`[Job ${job.id}] --- PROCESSING COMPLETE ---`);
       return entry;
     } catch (error) {
       console.error(`\n[Job ${job.id}] CRITICAL ERROR CAUGHT IN WORKER:`, error);
@@ -195,7 +183,6 @@ export const startWorker = () => {
       try {
         if (localFilePath && fs.existsSync(localFilePath)) {
           fs.unlinkSync(localFilePath);
-          console.log(`[Job ${job.id}] Cleanup: Deleted local temp file.`);
         }
       } catch (delErr) {
         console.error(`[Job ${job.id}] Cleanup Error: Failed to delete local temp file.`, delErr);
