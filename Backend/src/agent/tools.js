@@ -2,7 +2,7 @@ import { tool } from '@langchain/core/tools';
 import { z } from 'zod';
 import { mealTypeEnum } from '../models/schemas.js';
 
-export const createTools = (nutritionService) => {
+export const createTools = (nutritionService, authService) => {
   const logMealTool = tool(
     async (input) => {
       try {
@@ -76,5 +76,25 @@ export const createTools = (nutritionService) => {
     }
   );
 
-  return [logMealTool, queryNutritionTool, checkGoalsTool];
+  const savePermanentPreferenceTool = tool(
+    async (input) => {
+      try {
+        await authService.updateUserPreferences(input.userId, input.key, input.value);
+        return `Successfully saved preference '${input.key}' as '${JSON.stringify(input.value)}'.`;
+      } catch (e) {
+        return `Error saving preference: ${e.message}`;
+      }
+    },
+    {
+      name: 'save_permanent_preference',
+      description: 'Saves a permanent dietary restriction, preference, allergy, or long-term goal for the user to their permanent profile.',
+      schema: z.object({
+        userId: z.string().uuid(),
+        key: z.string(),
+        value: z.any()
+      })
+    }
+  );
+
+  return [logMealTool, queryNutritionTool, checkGoalsTool, savePermanentPreferenceTool];
 };

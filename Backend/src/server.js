@@ -6,23 +6,25 @@ import s3Client from './config/s3.js';
 
 // DAOs
 import NutritionDao from './daos/nutrition.dao.js';
+import AuthDao from './daos/auth.dao.js';
 
 // Services
 import NutritionService from './services/nutrition.service.js';
 import UploadService from './services/upload.service.js';
 import AiService from './services/ai.service.js';
+import AuthService from './services/auth.service.js';
 
 // Controllers
 import UploadController from './controllers/upload.controller.js';
 import AiController from './controllers/ai.controller.js';
 import AgentController from './controllers/agent.controller.js';
+import AuthController from './controllers/auth.controller.js';
 
 // Routes
 import { createApiRouter } from './routes/api.js';
 
 // Agent & Workers
 import { createAgentGraph } from './agent/graph.js';
-import { getCheckpointer } from './agent/checkpointer.js';
 import { startWorker } from './workers/nutrition.worker.js';
 
 dotenv.config();
@@ -32,23 +34,26 @@ app.use(express.json());
 
 // Dependency Injection Setup
 const nutritionDao = new NutritionDao();
+const authDao = new AuthDao();
+
 const nutritionService = new NutritionService(nutritionDao, redisClient);
 const uploadService = new UploadService(s3Client);
 const aiService = new AiService(redisClient);
+const authService = new AuthService(authDao);
 
 const uploadController = new UploadController(uploadService);
 const aiController = new AiController(aiService);
+const authController = new AuthController(authService);
 
 // Agent setup
 let agentController;
 const setupAgent = async () => {
-  const checkpointer = await getCheckpointer();
-  const graph = await createAgentGraph(nutritionService);
-  agentController = new AgentController(graph, checkpointer);
+  const graph = await createAgentGraph(nutritionService, authService);
+  agentController = new AgentController(graph, authService);
   await agentController.initialize();
   
   // Routes
-  app.use('/api/v1', createApiRouter(uploadController, aiController, agentController));
+  app.use('/api/v1', createApiRouter(authController, uploadController, aiController, agentController));
 };
 
 // Start Server

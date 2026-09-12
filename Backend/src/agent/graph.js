@@ -4,8 +4,8 @@ import { ToolNode } from '@langchain/langgraph/prebuilt';
 import { SystemMessage, HumanMessage, RemoveMessage } from '@langchain/core/messages';
 import { createTools } from './tools.js';
 
-export const createAgentGraph = async (nutritionService) => {
-  const tools = createTools(nutritionService);
+export const createAgentGraph = async (nutritionService, authService) => {
+  const tools = createTools(nutritionService, authService);
   const toolNode = new ToolNode(tools);
   
   const model = new ChatOllama({
@@ -18,6 +18,10 @@ export const createAgentGraph = async (nutritionService) => {
     summary: {
       value: (x, y) => y || x || "",
       default: () => ""
+    },
+    preferences: {
+      value: (x, y) => y || x || {},
+      default: () => ({})
     }
   };
 
@@ -51,8 +55,12 @@ export const createAgentGraph = async (nutritionService) => {
   };
 
   const callModel = async (state) => {
-    const { messages, summary } = state;
-    const systemPrompt = "You are a helpful AI Nutrition Assistant. Use tools to log meals and check goals.";
+    const { messages, summary, preferences } = state;
+    let systemPrompt = "You are a helpful AI Nutrition Assistant. Use tools to log meals and check goals.";
+    
+    if (preferences && Object.keys(preferences).length > 0) {
+      systemPrompt += `\nUser Permanent Preferences: ${JSON.stringify(preferences)}`;
+    }
     
     let currentMessages = [new SystemMessage(systemPrompt)];
     if (summary) {
