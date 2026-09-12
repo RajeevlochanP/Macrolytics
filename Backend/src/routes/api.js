@@ -17,6 +17,8 @@ export const createApiRouter = (authController, uploadController, aiController, 
   // Nutrition Routes
   router.post('/nutrition/entries', nutritionController.createEntry);
   router.get('/nutrition/entries', nutritionController.getEntries);
+  router.put('/nutrition/entries/:id', nutritionController.updateEntry);
+  router.delete('/nutrition/entries/:id', nutritionController.deleteEntry);
   router.get('/nutrition/goals', nutritionController.getGoals);
   router.put('/nutrition/goals', nutritionController.updateGoals);
   router.get('/nutrition/reports/weekly', nutritionController.getWeeklyReport);

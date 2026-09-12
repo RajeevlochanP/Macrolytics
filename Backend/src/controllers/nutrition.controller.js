@@ -40,6 +40,39 @@ export default class NutritionController {
     }
   }
 
+  updateEntry = async (req, res) => {
+    try {
+      const userId = req.user.id;
+      const { id } = req.params;
+      const updates = req.body;
+      
+      const updated = await this.nutritionService.updateMeal(id, userId, updates);
+      res.json(updated);
+    } catch (error) {
+      console.error(error);
+      if (error.message === 'Entry not found') {
+        return res.status(404).json({ error: 'Entry not found' });
+      }
+      res.status(500).json({ error: 'Failed to update food entry' });
+    }
+  }
+
+  deleteEntry = async (req, res) => {
+    try {
+      const userId = req.user.id;
+      const { id } = req.params;
+      
+      await this.nutritionService.deleteMeal(id, userId);
+      res.json({ message: 'Entry deleted successfully' });
+    } catch (error) {
+      console.error(error);
+      if (error.message === 'Entry not found') {
+        return res.status(404).json({ error: 'Entry not found' });
+      }
+      res.status(500).json({ error: 'Failed to delete food entry' });
+    }
+  }
+
   getGoals = async (req, res) => {
     try {
       const userId = req.user.id;

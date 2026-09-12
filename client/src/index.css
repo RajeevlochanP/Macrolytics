@@ -1,0 +1,139 @@
+/* Minimal, Utilitarian, Codeforces/HackerNews style */
+:root {
+  --bg: #ffffff;
+  --text: #000000;
+  --text-muted: #666666;
+  --border: #cccccc;
+  --hover: #f5f5f5;
+  --accent: #0056b3;
+  --danger: #d9534f;
+  --success: #5cb85c;
+  --font-mono: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-sans);
+  background-color: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+  font-size: 14px;
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+button {
+  background-color: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  padding: 6px 12px;
+  cursor: pointer;
+  font-family: var(--font-sans);
+  font-size: 13px;
+}
+
+button:hover {
+  background-color: var(--hover);
+}
+
+button.danger {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+button.danger:hover {
+  background-color: #fdf2f2;
+}
+
+input, select, textarea {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  padding: 6px;
+  border: 1px solid var(--border);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 20px;
+}
+
+th, td {
+  border: 1px solid var(--border);
+  padding: 8px;
+  text-align: left;
+}
+
+th {
+  background-color: var(--hover);
+  font-weight: bold;
+}
+
+.mono {
+  font-family: var(--font-mono);
+}
+
+/* Layout Classes */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.flex {
+  display: flex;
+}
+
+.flex-col {
+  flex-direction: column;
+}
+
+.items-center {
+  align-items: center;
+}
+
+.justify-between {
+  justify-content: space-between;
+}
+
+.gap-1 { gap: 4px; }
+.gap-2 { gap: 8px; }
+.gap-4 { gap: 16px; }
+.gap-6 { gap: 24px; }
+
+.mt-2 { margin-top: 8px; }
+.mt-4 { margin-top: 16px; }
+.mb-2 { margin-bottom: 8px; }
+.mb-4 { margin-bottom: 16px; }
+
+.p-4 { padding: 16px; }
+
+.card {
+  border: 1px solid var(--border);
+  padding: 16px;
+  background-color: var(--bg);
+}
+
+.badge {
+  display: inline-block;
+  padding: 2px 6px;
+  font-size: 11px;
+  border: 1px solid var(--border);
+  background: var(--hover);
+}
+
+.badge.success { border-color: var(--success); color: var(--success); }
+.badge.danger { border-color: var(--danger); color: var(--danger); }

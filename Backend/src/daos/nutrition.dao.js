@@ -113,4 +113,41 @@ export default class NutritionDao {
     const result = await pool.query(query, [userId, startDate, endDate]);
     return result.rows;
   }
+
+  async getFoodEntryById(id, userId) {
+    const query = `SELECT * FROM food_entries WHERE id = $1 AND user_id = $2`;
+    const result = await pool.query(query, [id, userId]);
+    return result.rows[0] || null;
+  }
+
+  async updateFoodEntry(id, userId, updates) {
+    const query = `
+      UPDATE food_entries 
+      SET 
+        quantity = $1,
+        calories = $2,
+        protein = $3,
+        carbs = $4,
+        fat = $5
+      WHERE id = $6 AND user_id = $7
+      RETURNING *
+    `;
+    const values = [
+      updates.quantity,
+      updates.calories,
+      updates.protein,
+      updates.carbs,
+      updates.fat,
+      id,
+      userId
+    ];
+    const result = await pool.query(query, values);
+    return result.rows[0];
+  }
+
+  async deleteFoodEntry(id, userId) {
+    const query = `DELETE FROM food_entries WHERE id = $1 AND user_id = $2 RETURNING *`;
+    const result = await pool.query(query, [id, userId]);
+    return result.rows[0];
+  }
 }

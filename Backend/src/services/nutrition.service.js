@@ -24,6 +24,54 @@ export default class NutritionService {
     return entry;
   }
 
+  async updateMeal(id, userId, updates) {
+    const oldEntry = await this.nutritionDao.getFoodEntryById(id, userId);
+    if (!oldEntry) throw new Error('Entry not found');
+
+    const updatedEntry = await this.nutritionDao.updateFoodEntry(id, userId, updates);
+    
+    // Update Redis Cache with delta
+    const dateStr = oldEntry.logged_at.toISOString().split('T')[0];
+    const redisKey = `nutrition:daily:${userId}:${dateStr}`;
+    
+    const deltaCalories = (updatedEntry.calories || 0) - (oldEntry.calories || 0);
+    const deltaProtein = (updatedEntry.protein || 0) - (oldEntry.protein || 0);
+    const deltaCarbs = (updatedEntry.carbs || 0) - (oldEntry.carbs || 0);
+    const deltaFat = (updatedEntry.fat || 0) - (oldEntry.fat || 0);
+
+    // Only update if key exists (otherwise it will rebuild correctly next time)
+    const exists = await this.redisClient.exists(redisKey);
+    if (exists) {
+      if (deltaCalories !== 0) await this.redisClient.hIncrByFloat(redisKey, 'calories', deltaCalories);
+      if (deltaProtein !== 0) await this.redisClient.hIncrByFloat(redisKey, 'protein', deltaProtein);
+      if (deltaCarbs !== 0) await this.redisClient.hIncrByFloat(redisKey, 'carbs', deltaCarbs);
+      if (deltaFat !== 0) await this.redisClient.hIncrByFloat(redisKey, 'fat', deltaFat);
+    }
+    
+    return updatedEntry;
+  }
+
+  async deleteMeal(id, userId) {
+    const oldEntry = await this.nutritionDao.getFoodEntryById(id, userId);
+    if (!oldEntry) throw new Error('Entry not found');
+
+    await this.nutritionDao.deleteFoodEntry(id, userId);
+
+    // Update Redis Cache with negative delta
+    const dateStr = oldEntry.logged_at.toISOString().split('T')[0];
+    const redisKey = `nutrition:daily:${userId}:${dateStr}`;
+    
+    const exists = await this.redisClient.exists(redisKey);
+    if (exists) {
+      await this.redisClient.hIncrByFloat(redisKey, 'calories', -(oldEntry.calories || 0));
+      await this.redisClient.hIncrByFloat(redisKey, 'protein', -(oldEntry.protein || 0));
+      await this.redisClient.hIncrByFloat(redisKey, 'carbs', -(oldEntry.carbs || 0));
+      await this.redisClient.hIncrByFloat(redisKey, 'fat', -(oldEntry.fat || 0));
+    }
+    
+    return true;
+  }
+
   async getDailySummary(userId, dateStr) {
     const redisKey = `nutrition:daily:${userId}:${dateStr}`;
     const cached = await this.redisClient.hGetAll(redisKey);
