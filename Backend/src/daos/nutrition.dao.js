@@ -5,7 +5,7 @@ export default class NutritionDao {
   async createFoodEntry(entryData) {
     const query = `
       INSERT INTO food_entries 
-        (user_id, meal_type, item_name, quantity, quantity_unit, calories, protein, carbs, fat, micronutrients, image_url)
+        (user_id, meal_type, item_name, quantity, quantity_unit, calories, protein, carbs, fat, micros, image_url)
       VALUES 
         ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
       RETURNING *
@@ -20,7 +20,7 @@ export default class NutritionDao {
       entryData.protein,
       entryData.carbs,
       entryData.fat,
-      entryData.micronutrients ? JSON.stringify(entryData.micronutrients) : null,
+      entryData.micros ? JSON.stringify(entryData.micros) : null,
       entryData.image_url || null
     ];
     
@@ -92,6 +92,23 @@ export default class NutritionDao {
       SELECT * FROM food_entries 
       WHERE user_id = $1 AND logged_at >= $2 AND logged_at <= $3 
       ORDER BY logged_at DESC
+    `;
+    const result = await pool.query(query, [userId, startDate, endDate]);
+    return result.rows;
+  }
+
+  async getWeeklyAggregation(userId, startDate, endDate) {
+    const query = `
+      SELECT 
+        DATE(logged_at) as date,
+        SUM(calories) as total_calories,
+        SUM(protein) as total_protein,
+        SUM(carbs) as total_carbs,
+        SUM(fat) as total_fat
+      FROM food_entries
+      WHERE user_id = $1 AND logged_at >= $2 AND logged_at <= $3
+      GROUP BY DATE(logged_at)
+      ORDER BY DATE(logged_at) ASC
     `;
     const result = await pool.query(query, [userId, startDate, endDate]);
     return result.rows;

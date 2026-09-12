@@ -62,4 +62,45 @@ export default class NutritionService {
     const summary = await this.getDailySummary(userId, dateStr);
     return { goals, summary };
   }
+
+  async getHealthGoals(userId) {
+    return this.nutritionDao.getHealthGoals(userId);
+  }
+
+  async setHealthGoals(userId, goalData) {
+    return this.nutritionDao.upsertHealthGoal({ ...goalData, user_id: userId });
+  }
+
+  async getWeeklyReport(userId, dateStr) {
+    // Generate report for the 7 days ending on dateStr
+    const endDate = new Date(`${dateStr}T23:59:59Z`);
+    const startDate = new Date(endDate);
+    startDate.setDate(startDate.getDate() - 6);
+    startDate.setHours(0, 0, 0, 0);
+
+    const aggregation = await this.nutritionDao.getWeeklyAggregation(userId, startDate, endDate);
+    
+    // Fill in missing days with zeros
+    const report = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(startDate);
+      d.setDate(d.getDate() + i);
+      const dStr = d.toISOString().split('T')[0];
+      
+      const dayData = aggregation.find(row => row.date.toISOString().split('T')[0] === dStr);
+      if (dayData) {
+        report.push({
+          date: dStr,
+          calories: Number(dayData.total_calories),
+          protein: Number(dayData.total_protein),
+          carbs: Number(dayData.total_carbs),
+          fat: Number(dayData.total_fat)
+        });
+      } else {
+        report.push({ date: dStr, calories: 0, protein: 0, carbs: 0, fat: 0 });
+      }
+    }
+    
+    return report;
+  }
 }

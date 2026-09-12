@@ -1,4 +1,4 @@
-import { StateGraph, END, START, MessagesAnnotation } from '@langchain/langgraph';
+import { Annotation, StateGraph, END, START, MessagesAnnotation } from '@langchain/langgraph';
 import { ChatOllama } from '@langchain/ollama';
 import { ToolNode } from '@langchain/langgraph/prebuilt';
 import { SystemMessage, HumanMessage, RemoveMessage } from '@langchain/core/messages';
@@ -13,17 +13,17 @@ export const createAgentGraph = async (nutritionService, authService) => {
     temperature: 0,
   }).bindTools(tools);
 
-  const AgentState = {
-    messages: MessagesAnnotation.messages,
-    summary: {
-      value: (x, y) => y || x || "",
+  const AgentState = Annotation.Root({
+    ...MessagesAnnotation.spec,
+    summary: Annotation({
+      reducer: (x, y) => y || x || "",
       default: () => ""
-    },
-    preferences: {
-      value: (x, y) => y || x || {},
+    }),
+    preferences: Annotation({
+      reducer: (x, y) => y || x || {},
       default: () => ({})
-    }
-  };
+    })
+  });
 
   const shouldSummarize = (state) => {
     if (state.messages.length > 6) {
@@ -56,7 +56,7 @@ export const createAgentGraph = async (nutritionService, authService) => {
 
   const callModel = async (state) => {
     const { messages, summary, preferences } = state;
-    let systemPrompt = "You are a helpful AI Nutrition Assistant. Use tools to log meals and check goals.";
+    let systemPrompt = "You are a helpful AI Nutrition Assistant. Use tools to log meals and check goals.\n\nYou are a text-only nutrition assistant. Do not attempt to process or ask for images. If a user logs a meal but provides vague quantities (e.g., 'I ate pizza', 'I had rice'), DO NOT call the 'log_meal' tool. Instead, reply and ask them for clarification on the portion size (e.g., 'How many slices?', 'Roughly how many grams or cups?'). Only call the tool when the quantity is clear.";
     
     if (preferences && Object.keys(preferences).length > 0) {
       systemPrompt += `\nUser Permanent Preferences: ${JSON.stringify(preferences)}`;

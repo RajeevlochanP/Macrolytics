@@ -36,7 +36,7 @@ CREATE TABLE IF NOT EXISTS food_entries (
     protein NUMERIC(8,2) NOT NULL,
     carbs NUMERIC(8,2) NOT NULL,
     fat NUMERIC(8,2) NOT NULL,
-    micronutrients JSONB,
+    micros JSONB,
     image_url TEXT,
     logged_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

@@ -96,5 +96,80 @@ export const createTools = (nutritionService, authService) => {
     }
   );
 
-  return [logMealTool, queryNutritionTool, checkGoalsTool, savePermanentPreferenceTool];
+  const setHealthGoalsTool = tool(
+    async (input) => {
+      try {
+        await nutritionService.setHealthGoals(input.userId, {
+          daily_calorie_target: input.daily_calorie_target,
+          protein_grams: input.protein_grams,
+          carb_grams: input.carb_grams,
+          fat_grams: input.fat_grams,
+          weight_goal: input.weight_goal
+        });
+        return `Successfully set health goals for user.`;
+      } catch (e) {
+        return `Error setting health goals: ${e.message}`;
+      }
+    },
+    {
+      name: 'set_health_goals',
+      description: 'Set or update the user\'s daily health goals (macros, calories, weight).',
+      schema: z.object({
+        userId: z.string().uuid(),
+        daily_calorie_target: z.number().int().positive(),
+        protein_grams: z.number().int().nonnegative(),
+        carb_grams: z.number().int().nonnegative(),
+        fat_grams: z.number().int().nonnegative(),
+        weight_goal: z.number().positive().optional()
+      })
+    }
+  );
+
+  const listRecentMealsTool = tool(
+    async (input) => {
+      try {
+        const entries = await nutritionService.getFoodEntries(input.userId, input.limit || 10);
+        return JSON.stringify(entries);
+      } catch (e) {
+        return `Error listing recent meals: ${e.message}`;
+      }
+    },
+    {
+      name: 'list_recent_meals',
+      description: 'Retrieve a list of the user\'s recently logged food entries and meals.',
+      schema: z.object({
+        userId: z.string().uuid(),
+        limit: z.number().int().positive().optional()
+      })
+    }
+  );
+
+  const getWeeklySummaryTool = tool(
+    async (input) => {
+      try {
+        const report = await nutritionService.getWeeklyReport(input.userId, input.endDate);
+        return JSON.stringify(report);
+      } catch (e) {
+        return `Error getting weekly summary: ${e.message}`;
+      }
+    },
+    {
+      name: 'get_weekly_summary',
+      description: 'Retrieve a daily aggregation of calories and macros for the past 7 days ending on the specified date.',
+      schema: z.object({
+        userId: z.string().uuid(),
+        endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/)
+      })
+    }
+  );
+
+  return [
+    logMealTool, 
+    queryNutritionTool, 
+    checkGoalsTool, 
+    savePermanentPreferenceTool,
+    setHealthGoalsTool,
+    listRecentMealsTool,
+    getWeeklySummaryTool
+  ];
 };

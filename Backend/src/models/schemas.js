@@ -12,7 +12,7 @@ export const foodEntrySchema = z.object({
   protein: z.number().nonnegative(),
   carbs: z.number().nonnegative(),
   fat: z.number().nonnegative(),
-  micronutrients: z.record(z.any()).optional(),
+  micros: z.record(z.any()).optional(),
   image_url: z.string().url().optional()
 });
 
@@ -34,4 +34,5 @@ export const extractedNutritionSchema = z.object({
   protein: z.number().describe("Estimated protein in grams"),
   carbs: z.number().describe("Estimated carbs in grams"),
   fat: z.number().describe("Estimated fat in grams"),
+  micros: z.record(z.string()).optional().describe("Micronutrients extracted, e.g. {\"vitamin_c\": \"10mg\", \"iron\": \"2mg\"}")
 });
