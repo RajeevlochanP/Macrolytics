@@ -32,7 +32,8 @@ export default function Assistant() {
       const response = await fetch('/api/agent/chat', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'x-timezone': Intl.DateTimeFormat().resolvedOptions().timeZone
         },
         body: JSON.stringify({
           message: userMsg,

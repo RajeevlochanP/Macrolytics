@@ -12,7 +12,8 @@ export default class UploadController {
         return res.status(400).json({ error: 'fileName, fileType, and mealType are required' });
       }
 
-      const { url, key, jobId } = await this.uploadService.generatePresignedUrl(userId, mealType, fileName, fileType);
+      const timeZone = req.headers['x-timezone'] || 'UTC';
+      const { url, key, jobId } = await this.uploadService.generatePresignedUrl(userId, mealType, fileName, fileType, timeZone);
       res.json({ url, key, jobId });
     } catch (error) {
       console.error(error);

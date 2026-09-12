@@ -28,6 +28,53 @@ export default class NutritionDao {
     return result.rows[0];
   }
 
+  async createProcessingStub(userId, mealType, jobId) {
+    const query = `
+      INSERT INTO food_entries (user_id, meal_type, status, job_id, item_name, quantity, calories, protein, carbs, fat)
+      VALUES ($1, $2, 'PROCESSING', $3, 'Analyzing image...', 0, 0, 0, 0, 0)
+      RETURNING *
+    `;
+    const result = await pool.query(query, [userId, mealType, jobId]);
+    return result.rows[0];
+  }
+
+  async updateEntryFromJob(jobId, updates) {
+    const query = `
+      UPDATE food_entries 
+      SET 
+        item_name = $1,
+        quantity = $2,
+        quantity_unit = $3,
+        calories = $4,
+        protein = $5,
+        carbs = $6,
+        fat = $7,
+        micros = $8,
+        status = 'COMPLETED'
+      WHERE job_id = $9
+      RETURNING *
+    `;
+    const values = [
+      updates.item_name,
+      updates.quantity,
+      updates.quantity_unit,
+      updates.calories,
+      updates.protein,
+      updates.carbs,
+      updates.fat,
+      updates.micros ? JSON.stringify(updates.micros) : null,
+      jobId
+    ];
+    const result = await pool.query(query, values);
+    return result.rows[0];
+  }
+
+  async markJobFailed(jobId) {
+    const query = `UPDATE food_entries SET status = 'FAILED' WHERE job_id = $1 RETURNING *`;
+    const result = await pool.query(query, [jobId]);
+    return result.rows[0];
+  }
+
   async getFoodEntries(userId, limit = 20, lastLoggedAt = null, lastId = null) {
     let query;
     let values;
@@ -87,30 +134,34 @@ export default class NutritionDao {
     return result.rows[0];
   }
 
-  async getEntriesByDateRange(userId, startDate, endDate) {
+  async getEntriesByDateRange(userId, startDateStr, endDateStr, timeZone = 'UTC') {
     const query = `
       SELECT * FROM food_entries 
-      WHERE user_id = $1 AND logged_at >= $2 AND logged_at <= $3 
+      WHERE user_id = $1 
+        AND DATE(logged_at AT TIME ZONE $4) >= $2 
+        AND DATE(logged_at AT TIME ZONE $4) <= $3 
       ORDER BY logged_at DESC
     `;
-    const result = await pool.query(query, [userId, startDate, endDate]);
+    const result = await pool.query(query, [userId, startDateStr, endDateStr, timeZone]);
     return result.rows;
   }
 
-  async getWeeklyAggregation(userId, startDate, endDate) {
+  async getWeeklyAggregation(userId, startDateStr, endDateStr, timeZone = 'UTC') {
     const query = `
       SELECT 
-        DATE(logged_at) as date,
+        TO_CHAR(logged_at AT TIME ZONE $4, 'YYYY-MM-DD') as date_str,
         SUM(calories) as total_calories,
         SUM(protein) as total_protein,
         SUM(carbs) as total_carbs,
         SUM(fat) as total_fat
       FROM food_entries
-      WHERE user_id = $1 AND logged_at >= $2 AND logged_at <= $3
-      GROUP BY DATE(logged_at)
-      ORDER BY DATE(logged_at) ASC
+      WHERE user_id = $1 
+        AND DATE(logged_at AT TIME ZONE $4) >= $2 
+        AND DATE(logged_at AT TIME ZONE $4) <= $3
+      GROUP BY TO_CHAR(logged_at AT TIME ZONE $4, 'YYYY-MM-DD')
+      ORDER BY TO_CHAR(logged_at AT TIME ZONE $4, 'YYYY-MM-DD') ASC
     `;
-    const result = await pool.query(query, [userId, startDate, endDate]);
+    const result = await pool.query(query, [userId, startDateStr, endDateStr, timeZone]);
     return result.rows;
   }
 

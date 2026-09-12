@@ -1,3 +1,5 @@
+import { getLocalYMD } from '../utils/date.js';
+
 export default class NutritionController {
   constructor(nutritionService) {
     this.nutritionService = nutritionService;
@@ -13,7 +15,8 @@ export default class NutritionController {
       }
 
       // NOTE: We call logMeal on the service so Redis cache logic runs automatically
-      const entry = await this.nutritionService.logMeal(userId, entryData);
+      const timeZone = req.headers['x-timezone'] || 'UTC';
+      const entry = await this.nutritionService.logMeal(userId, entryData, timeZone);
       res.status(201).json(entry);
     } catch (error) {
       console.error(error);
@@ -26,9 +29,11 @@ export default class NutritionController {
       const userId = req.user.id;
       const { limit = 20, lastLoggedAt, lastId, startDate, endDate } = req.query;
 
+      const timeZone = req.headers['x-timezone'] || 'UTC';
+
       let entries = [];
       if (startDate && endDate) {
-        entries = await this.nutritionService.nutritionDao.getEntriesByDateRange(userId, startDate, endDate);
+        entries = await this.nutritionService.nutritionDao.getEntriesByDateRange(userId, startDate, endDate, timeZone);
       } else {
         entries = await this.nutritionService.getFoodEntries(userId, parseInt(limit), lastLoggedAt, lastId);
       }
@@ -45,8 +50,9 @@ export default class NutritionController {
       const userId = req.user.id;
       const { id } = req.params;
       const updates = req.body;
+      const timeZone = req.headers['x-timezone'] || 'UTC';
       
-      const updated = await this.nutritionService.updateMeal(id, userId, updates);
+      const updated = await this.nutritionService.updateMeal(id, userId, updates, timeZone);
       res.json(updated);
     } catch (error) {
       console.error(error);
@@ -61,8 +67,9 @@ export default class NutritionController {
     try {
       const userId = req.user.id;
       const { id } = req.params;
+      const timeZone = req.headers['x-timezone'] || 'UTC';
       
-      await this.nutritionService.deleteMeal(id, userId);
+      await this.nutritionService.deleteMeal(id, userId, timeZone);
       res.json({ message: 'Entry deleted successfully' });
     } catch (error) {
       console.error(error);
@@ -76,11 +83,19 @@ export default class NutritionController {
   getGoals = async (req, res) => {
     try {
       const userId = req.user.id;
-      const goals = await this.nutritionService.getHealthGoals(userId);
-      if (!goals) {
-        return res.status(404).json({ error: 'Health goals not found for user' });
+      const date = req.query.date;
+      const timeZone = req.headers['x-timezone'] || 'UTC';
+
+      if (date) {
+        const result = await this.nutritionService.checkGoals(userId, date, timeZone);
+        res.json(result);
+      } else {
+        const goals = await this.nutritionService.getHealthGoals(userId);
+        if (!goals) {
+          return res.status(404).json({ error: 'Health goals not found for user' });
+        }
+        res.json(goals);
       }
-      res.json(goals);
     } catch (error) {
       console.error(error);
       res.status(500).json({ error: 'Failed to fetch health goals' });
@@ -107,10 +122,11 @@ export default class NutritionController {
   getWeeklyReport = async (req, res) => {
     try {
       const userId = req.user.id;
-      // Default to today if date not provided
-      const date = req.query.date || new Date().toISOString().split('T')[0];
+      const timeZone = req.headers['x-timezone'] || 'UTC';
+      // Default to today if localDate not provided
+      const date = req.query.localDate || req.query.date || getLocalYMD(new Date(), timeZone);
       
-      const report = await this.nutritionService.getWeeklyReport(userId, date);
+      const report = await this.nutritionService.getWeeklyReport(userId, date, timeZone);
       res.json(report);
     } catch (error) {
       console.error(error);

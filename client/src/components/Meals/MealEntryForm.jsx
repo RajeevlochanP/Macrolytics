@@ -20,7 +20,10 @@ export default function MealEntryForm({ onEntryAdded }) {
     try {
       const entry = await apiClient('/nutrition/entries', {
         method: 'POST',
-        body: formData
+        body: {
+          ...formData,
+          date: new Date().toLocaleDateString('en-CA')
+        }
       });
       onEntryAdded(entry);
       // Reset form

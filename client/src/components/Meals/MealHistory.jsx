@@ -12,9 +12,21 @@ export default function MealHistory({ reloadCounter }) {
     fetchEntries();
   }, [reloadCounter]);
 
+  useEffect(() => {
+    const hasProcessing = entries.some(e => e.status === 'PROCESSING');
+    if (!hasProcessing) return;
+
+    const intervalId = setInterval(() => {
+      fetchEntries();
+    }, 3000);
+
+    return () => clearInterval(intervalId);
+  }, [entries]);
+
   const fetchEntries = async () => {
     try {
-      const data = await apiClient('/nutrition/entries');
+      const today = new Date().toLocaleDateString('en-CA');
+      const data = await apiClient(`/nutrition/entries?localDate=${today}`);
       setEntries(data);
     } catch (e) {
       console.error(e);
@@ -92,7 +104,18 @@ export default function MealHistory({ reloadCounter }) {
                   <td>{entry.meal_type}</td>
                   <td>{entry.item_name}</td>
                   
-                  {editingId === entry.id ? (
+                  {entry.status === 'PROCESSING' ? (
+                    <td colSpan="4">
+                      <span className="badge">Processing...</span>
+                    </td>
+                  ) : entry.status === 'FAILED' ? (
+                    <td colSpan="4">
+                      <div className="flex items-center justify-between">
+                        <span style={{ color: 'var(--danger)' }}>Failed to process image</span>
+                        <button className="danger" onClick={() => deleteEntry(entry.id)}>Del</button>
+                      </div>
+                    </td>
+                  ) : editingId === entry.id ? (
                     <>
                       <td><input name="quantity" type="number" step="0.1" value={editForm.quantity} onChange={handleEditChange} style={{ width: '60px' }} /> {entry.quantity_unit}</td>
                       <td><input name="calories" type="number" value={editForm.calories} onChange={handleEditChange} style={{ width: '60px' }} /></td>

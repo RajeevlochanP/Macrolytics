@@ -22,6 +22,10 @@ export const createAgentGraph = async (nutritionService, authService) => {
     preferences: Annotation({
       reducer: (x, y) => y || x || {},
       default: () => ({})
+    }),
+    timeZone: Annotation({
+      reducer: (x, y) => y || x || 'UTC',
+      default: () => 'UTC'
     })
   });
 
@@ -55,8 +59,17 @@ export const createAgentGraph = async (nutritionService, authService) => {
   };
 
   const callModel = async (state) => {
-    const { messages, summary, preferences } = state;
-    let systemPrompt = "You are a helpful AI Nutrition Assistant. Use tools to log meals and check goals.\n\nYou are a text-only nutrition assistant. Do not attempt to process or ask for images. If a user logs a meal but provides vague quantities (e.g., 'I ate pizza', 'I had rice'), DO NOT call the 'log_meal' tool. Instead, reply and ask them for clarification on the portion size (e.g., 'How many slices?', 'Roughly how many grams or cups?'). Only call the tool when the quantity is clear.";
+    const { messages, summary, preferences, timeZone } = state;
+    
+    // Compute the user's explicit local date
+    let localDate = 'YYYY-MM-DD';
+    try {
+      localDate = new Intl.DateTimeFormat('en-CA', { timeZone }).format(new Date());
+    } catch(e) {
+      localDate = new Date().toISOString().split('T')[0];
+    }
+    
+    let systemPrompt = `You are a helpful AI Nutrition Assistant. Use tools to log meals and check goals.\n\nThe user's current local date is ${localDate}. When calling the log_meal tool, explicitly pass this date.\n\nYou are a text-only nutrition assistant. Do not attempt to process or ask for images. If a user logs a meal but provides vague quantities (e.g., 'I ate pizza', 'I had rice'), DO NOT call the 'log_meal' tool. Instead, reply and ask them for clarification on the portion size (e.g., 'How many slices?', 'Roughly how many grams or cups?'). Only call the tool when the quantity is clear.`;
     
     if (preferences && Object.keys(preferences).length > 0) {
       systemPrompt += `\nUser Permanent Preferences: ${JSON.stringify(preferences)}`;

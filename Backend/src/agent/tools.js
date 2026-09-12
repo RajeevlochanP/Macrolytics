@@ -14,7 +14,8 @@ export const createTools = (nutritionService, authService) => {
           calories: input.calories,
           protein: input.protein,
           carbs: input.carbs,
-          fat: input.fat
+          fat: input.fat,
+          date: input.date
         });
         return `Successfully logged ${input.quantity} ${input.quantity_unit} of ${input.item_name}.`;
       } catch (e) {
@@ -34,6 +35,7 @@ export const createTools = (nutritionService, authService) => {
         protein: z.number().nonnegative(),
         carbs: z.number().nonnegative(),
         fat: z.number().nonnegative(),
+        date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/)
       })
     }
   );

@@ -20,16 +20,20 @@ export default function GoalsCard() {
 
   const fetchData = async () => {
     try {
-      const [goalsRes, summaryRes] = await Promise.all([
-        apiClient('/nutrition/goals').catch(() => null), // 404 if no goals set yet
-        apiClient(`/nutrition/reports/weekly?date=${new Date().toISOString().split('T')[0]}`)
-      ]);
+      const todayStr = new Date().toLocaleDateString('en-CA');
+      const response = await apiClient(`/nutrition/goals?date=${todayStr}`).catch(() => null);
       
-      if (goalsRes) setGoals(goalsRes);
+      if (response && response.goals) {
+        setGoals(prev => ({ ...prev, ...response.goals }));
+      }
       
-      if (summaryRes && summaryRes.length > 0) {
-        // The last item in the 7-day report is today
-        setTodaySummary(summaryRes[summaryRes.length - 1]);
+      if (response && response.summary) {
+        setTodaySummary({
+          calories: response.summary.calories || 0,
+          protein: response.summary.protein || 0,
+          carbs: response.summary.carbs || 0,
+          fat: response.summary.fat || 0
+        });
       }
     } catch (e) {
       console.error(e);

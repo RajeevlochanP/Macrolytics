@@ -1,15 +1,17 @@
+import { getLocalYMD } from '../utils/date.js';
+
 export default class NutritionService {
   constructor(nutritionDao, redisClient) {
     this.nutritionDao = nutritionDao;
     this.redisClient = redisClient;
   }
 
-  async logMeal(userId, entryData) {
+  async logMeal(userId, entryData, timeZone = 'UTC') {
     // Save to DB
     const entry = await this.nutritionDao.createFoodEntry({ ...entryData, user_id: userId });
 
     // Update Redis Cache for Daily Aggregation
-    const dateStr = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+    const dateStr = entryData.date || getLocalYMD(entry.logged_at || new Date(), timeZone); // YYYY-MM-DD
     const redisKey = `nutrition:daily:${userId}:${dateStr}`;
 
     // Use HINCRBYFLOAT for atomic updates without full table scans
@@ -24,14 +26,14 @@ export default class NutritionService {
     return entry;
   }
 
-  async updateMeal(id, userId, updates) {
+  async updateMeal(id, userId, updates, timeZone = 'UTC') {
     const oldEntry = await this.nutritionDao.getFoodEntryById(id, userId);
     if (!oldEntry) throw new Error('Entry not found');
 
     const updatedEntry = await this.nutritionDao.updateFoodEntry(id, userId, updates);
     
     // Update Redis Cache with delta
-    const dateStr = oldEntry.logged_at.toISOString().split('T')[0];
+    const dateStr = getLocalYMD(oldEntry.logged_at, timeZone);
     const redisKey = `nutrition:daily:${userId}:${dateStr}`;
     
     const deltaCalories = (updatedEntry.calories || 0) - (oldEntry.calories || 0);
@@ -51,14 +53,14 @@ export default class NutritionService {
     return updatedEntry;
   }
 
-  async deleteMeal(id, userId) {
+  async deleteMeal(id, userId, timeZone = 'UTC') {
     const oldEntry = await this.nutritionDao.getFoodEntryById(id, userId);
     if (!oldEntry) throw new Error('Entry not found');
 
     await this.nutritionDao.deleteFoodEntry(id, userId);
 
     // Update Redis Cache with negative delta
-    const dateStr = oldEntry.logged_at.toISOString().split('T')[0];
+    const dateStr = getLocalYMD(oldEntry.logged_at, timeZone);
     const redisKey = `nutrition:daily:${userId}:${dateStr}`;
     
     const exists = await this.redisClient.exists(redisKey);
@@ -72,7 +74,7 @@ export default class NutritionService {
     return true;
   }
 
-  async getDailySummary(userId, dateStr) {
+  async getDailySummary(userId, dateStr, timeZone = 'UTC') {
     const redisKey = `nutrition:daily:${userId}:${dateStr}`;
     const cached = await this.redisClient.hGetAll(redisKey);
     if (Object.keys(cached).length > 0) {
@@ -80,9 +82,7 @@ export default class NutritionService {
     }
     
     // If not in cache, calculate from DB (fallback)
-    const startDate = new Date(`${dateStr}T00:00:00Z`);
-    const endDate = new Date(`${dateStr}T23:59:59Z`);
-    const entries = await this.nutritionDao.getEntriesByDateRange(userId, startDate, endDate);
+    const entries = await this.nutritionDao.getEntriesByDateRange(userId, dateStr, dateStr, timeZone);
     
     const summary = entries.reduce((acc, curr) => {
       acc.calories += Number(curr.calories);
@@ -103,11 +103,9 @@ export default class NutritionService {
     return this.nutritionDao.getFoodEntries(userId, limit, lastLoggedAt, lastId);
   }
 
-  async checkGoals(userId, dateStr) {
+  async checkGoals(userId, dateStr, timeZone = 'UTC') {
     const goals = await this.nutritionDao.getHealthGoals(userId);
-    if (!goals) return { goals: null, summary: null };
-
-    const summary = await this.getDailySummary(userId, dateStr);
+    const summary = await this.getDailySummary(userId, dateStr, timeZone);
     return { goals, summary };
   }
 
@@ -119,23 +117,32 @@ export default class NutritionService {
     return this.nutritionDao.upsertHealthGoal({ ...goalData, user_id: userId });
   }
 
-  async getWeeklyReport(userId, dateStr) {
-    // Generate report for the 7 days ending on dateStr
-    const endDate = new Date(`${dateStr}T23:59:59Z`);
-    const startDate = new Date(endDate);
-    startDate.setDate(startDate.getDate() - 6);
-    startDate.setHours(0, 0, 0, 0);
+  async getWeeklyReport(userId, dateStr, timeZone = 'UTC') {
+    const [y, m, d] = dateStr.split('-');
+    const endDateObj = new Date(y, m - 1, d);
+    
+    const startDateObj = new Date(endDateObj);
+    startDateObj.setDate(startDateObj.getDate() - 6);
+    
+    const formatDate = (date) => {
+      const yyyy = date.getFullYear();
+      const mm = String(date.getMonth() + 1).padStart(2, '0');
+      const dd = String(date.getDate()).padStart(2, '0');
+      return `${yyyy}-${mm}-${dd}`;
+    };
 
-    const aggregation = await this.nutritionDao.getWeeklyAggregation(userId, startDate, endDate);
+    const startDateStr = formatDate(startDateObj);
+
+    const aggregation = await this.nutritionDao.getWeeklyAggregation(userId, startDateStr, dateStr, timeZone);
     
     // Fill in missing days with zeros
     const report = [];
     for (let i = 0; i < 7; i++) {
-      const d = new Date(startDate);
-      d.setDate(d.getDate() + i);
-      const dStr = d.toISOString().split('T')[0];
+      const dObj = new Date(startDateObj);
+      dObj.setDate(dObj.getDate() + i);
+      const dStr = formatDate(dObj);
       
-      const dayData = aggregation.find(row => row.date.toISOString().split('T')[0] === dStr);
+      const dayData = aggregation.find(row => row.date_str === dStr);
       if (dayData) {
         report.push({
           date: dStr,

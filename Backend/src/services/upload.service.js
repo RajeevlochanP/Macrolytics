@@ -9,7 +9,7 @@ export default class UploadService {
     this.bucketName = process.env.S3_BUCKET_NAME;
   }
 
-  async generatePresignedUrl(userId, mealType, fileName, fileType) {
+  async generatePresignedUrl(userId, mealType, fileName, fileType, timeZone = 'UTC') {
     const jobId = uuidv4();
     const key = `uploads/${userId}/${mealType}/${jobId}-${fileName}`;
     
@@ -24,7 +24,8 @@ export default class UploadService {
     
     // Set initial status in Redis
     await this.redisClient.hSet(`job:${jobId}`, {
-      state: 'AWAITING_UPLOAD'
+      state: 'AWAITING_UPLOAD',
+      timeZone
     });
     
     return { url, key, jobId };

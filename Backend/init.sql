@@ -30,14 +30,16 @@ CREATE TABLE IF NOT EXISTS food_entries (
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     meal_type VARCHAR(50) NOT NULL CHECK (meal_type IN ('Breakfast', 'Lunch', 'Dinner', 'Snacks')),
     item_name VARCHAR(255) NOT NULL,
-    quantity NUMERIC(8,2) NOT NULL,
-    quantity_unit VARCHAR(50) NOT NULL,
-    calories INTEGER NOT NULL,
-    protein NUMERIC(8,2) NOT NULL,
-    carbs NUMERIC(8,2) NOT NULL,
-    fat NUMERIC(8,2) NOT NULL,
+    quantity NUMERIC(8,2),
+    quantity_unit VARCHAR(50),
+    calories INTEGER,
+    protein NUMERIC(8,2),
+    carbs NUMERIC(8,2),
+    fat NUMERIC(8,2),
     micros JSONB,
     image_url TEXT,
+    status VARCHAR(20) DEFAULT 'COMPLETED',
+    job_id VARCHAR(50),
     logged_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 

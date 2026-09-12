@@ -68,10 +68,13 @@ export default class AgentController {
       res.setHeader('Cache-Control', 'no-cache');
       res.setHeader('Connection', 'keep-alive');
 
+      const timeZone = req.headers['x-timezone'] || 'UTC';
+
       const inputState = {
         messages: hydratedMessages,
         summary: context.summary,
-        preferences
+        preferences,
+        timeZone
       };
 
       const stream = await this.agent.streamEvents(inputState, { version: "v2" });

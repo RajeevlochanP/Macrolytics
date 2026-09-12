@@ -11,8 +11,8 @@ export default function WeeklyTrends() {
 
   const fetchData = async () => {
     try {
-      const today = new Date().toISOString().split('T')[0];
-      const data = await apiClient(`/nutrition/reports/weekly?date=${today}`);
+      const today = new Intl.DateTimeFormat('en-CA').format(new Date());
+      const data = await apiClient(`/nutrition/reports/weekly?localDate=${today}`);
       setReport(data);
     } catch (e) {
       console.error(e);
@@ -32,6 +32,13 @@ export default function WeeklyTrends() {
       <div className="flex items-end gap-2" style={{ height: '200px', padding: '10px 0', borderBottom: '1px solid var(--border)' }}>
         {report.map((day, i) => {
           const heightPct = Math.min(100, Math.round((day.calories / maxCalories) * 100));
+          
+          // Format date like 'Mon, Sep 6'
+          // day.date is YYYY-MM-DD, parsing it as local time:
+          const [y, m, d] = day.date.split('-');
+          const localDate = new Date(y, m - 1, d);
+          const formattedDate = new Intl.DateTimeFormat('en-US', { weekday: 'short', month: 'short', day: 'numeric' }).format(localDate);
+
           return (
             <div key={i} className="flex flex-col items-center justify-end gap-1" style={{ flex: 1, height: '100%' }}>
               <span className="mono" style={{ fontSize: '10px' }}>{Math.round(day.calories)}</span>
@@ -44,8 +51,8 @@ export default function WeeklyTrends() {
                   minHeight: '2px'
                 }}
               ></div>
-              <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
-                {day.date.split('-')[2]} {/* Just the day number */}
+              <span style={{ fontSize: '10px', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+                {formattedDate}
               </span>
             </div>
           );

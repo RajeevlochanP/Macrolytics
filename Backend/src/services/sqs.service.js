@@ -1,9 +1,10 @@
 import { SQSClient, ReceiveMessageCommand, DeleteMessageCommand } from '@aws-sdk/client-sqs';
 
 export default class SqsListenerService {
-  constructor(aiService, redisClient) {
+  constructor(aiService, redisClient, nutritionDao) {
     this.aiService = aiService;
     this.redisClient = redisClient;
+    this.nutritionDao = nutritionDao;
     this.queueUrl = process.env.AWS_SQS_QUEUE_URL;
     this.sqsClient = new SQSClient({
       region: process.env.AWS_REGION || 'us-east-1',
@@ -77,20 +78,21 @@ export default class SqsListenerService {
             const filePart = parts.slice(3).join('/');
             
             // Extract jobId from {jobId}-{fileName}
-            const jobId = filePart.substring(0, filePart.indexOf('-'));
+            const jobId = filePart.substring(0, 36);
             
             if (jobId) {
               const isNew = await this.redisClient.setNX(`job:${jobId}:lock`, '1');
               await this.redisClient.expire(`job:${jobId}:lock`, 3600);
               
               if (!isNew) {
-                console.log(`Skipping duplicate SQS event for jobId: ${jobId}`);
                 continue;
               }
 
               await this.redisClient.hSet(`job:${jobId}`, {
                 state: 'PROCESSING'
               });
+              
+              await this.nutritionDao.createProcessingStub(userId, mealType, jobId);
               
               await this.aiService.queue.add('extract', {
                 userId,

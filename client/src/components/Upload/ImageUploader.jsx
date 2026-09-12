@@ -52,7 +52,7 @@ export default function ImageUploader() {
         method: 'POST',
         body: {
           fileName: file.name,
-          contentType: file.type,
+          fileType: file.type,
           mealType
         }
       });

@@ -12,6 +12,7 @@ export const apiClient = async (endpoint, options = {}) => {
   
   const headers = {
     'Content-Type': 'application/json',
+    'x-timezone': Intl.DateTimeFormat().resolvedOptions().timeZone,
     ...options.headers,
   };
 

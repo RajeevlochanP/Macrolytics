@@ -1,22 +1,30 @@
+import fs from 'fs';
+import path from 'path';
+import os from 'os';
 import '../config/env.js';
 
 import { Worker } from 'bullmq';
 import { ChatOllama } from '@langchain/ollama';
 import { Annotation, StateGraph, END, START } from '@langchain/langgraph';
+import { HumanMessage } from '@langchain/core/messages';
 import { extractedNutritionSchema } from '../models/schemas.js';
 import db from '../config/db.js';
 import redisClient from '../config/redis.js';
+import s3Client from '../config/s3.js';
+import { DeleteObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
+import IORedis from 'ioredis';
+import { getLocalYMD } from '../utils/date.js';
 
 export const startWorker = () => {
   const model = new ChatOllama({
-    model: 'llama3.2-vision',
+    model: 'llava',
     temperature: 0,
   });
 
   const structuredModel = model.withStructuredOutput(extractedNutritionSchema);
 
   const ExtractorState = Annotation.Root({
-    imageUrl: Annotation({ reducer: (x, y) => y || x, default: () => "" }),
+    base64Image: Annotation({ reducer: (x, y) => y || x, default: () => "" }),
     extraction: Annotation({ reducer: (x, y) => y || x, default: () => null }),
     reflectionCount: Annotation({ reducer: (x, y) => x + (y || 0), default: () => 0 }),
     error: Annotation({ reducer: (x, y) => y || x, default: () => null }),
@@ -25,12 +33,18 @@ export const startWorker = () => {
 
   const extractorNode = async (state) => {
     try {
-      const { imageUrl } = state;
-      const prompt = `Extract nutritional information from the following image URL: ${imageUrl}. If you cannot determine the information, return an empty structure, but do not guess.`;
-      
-      const response = await structuredModel.invoke(prompt);
+      const { base64Image } = state;
+      const response = await structuredModel.invoke([
+        new HumanMessage({
+          content: [
+            { type: "text", text: "Extract nutritional information from this image. If you cannot determine the information, return an empty structure, but do not guess." },
+            { type: "image_url", image_url: { url: base64Image } }
+          ]
+        })
+      ]);
       return { extraction: response, error: null };
     } catch (e) {
+      console.error("[ExtractorNode] Error invoking Ollama:", e);
       return { error: e.message };
     }
   };
@@ -40,7 +54,7 @@ export const startWorker = () => {
     if (!extraction || Object.keys(extraction).length === 0) {
       return { isValid: false, reflectionCount: 1 };
     }
-    
+
     const isValid = extraction.calories >= 0 && extraction.protein >= 0 && extraction.carbs >= 0 && extraction.fat >= 0;
     return { isValid, reflectionCount: 1 };
   };
@@ -70,62 +84,126 @@ export const startWorker = () => {
     throw err;
   }
 
-  const worker = new Worker('nutrition-extraction', async job => {
-    const { userId, s3Key, mealType } = job.data;
-    
-    const imageUrl = `https://${process.env.S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${s3Key}`;
-    
-    let finalState;
-    try {
-      finalState = await app.invoke({ imageUrl });
-    } catch (err) {
-      throw new Error(`Extraction failed: ${err.message}`);
-    }
+  const bullConnection = new IORedis(process.env.REDIS_URL || 'redis://127.0.0.1:6379', {
+    maxRetriesPerRequest: null
+  });
 
-    if (!finalState.isValid) {
+  const worker = new Worker('nutrition-extraction', async job => {
+    let localFilePath;
+    try {
+      console.log(`\n[Job ${job.id}] --- STARTING PROCESSING ---`);
+      const { userId, s3Key, mealType } = job.data;
+
+      localFilePath = path.join(os.tmpdir(), `${job.id}.jpg`);
+
+      console.log(`[Job ${job.id}] 1. Fetching image from S3: ${s3Key}`);
+      const s3Response = await s3Client.send(new GetObjectCommand({
+        Bucket: process.env.S3_BUCKET_NAME,
+        Key: s3Key
+      }));
+
+      const fileBuffer = Buffer.from(await s3Response.Body.transformToByteArray());
+      fs.writeFileSync(localFilePath, fileBuffer);
+      console.log(`[Job ${job.id}] 2. Image saved locally to ${localFilePath}`);
+
+      await s3Client.send(new DeleteObjectCommand({
+        Bucket: process.env.S3_BUCKET_NAME,
+        Key: s3Key
+      }));
+      console.log(`[Job ${job.id}] 3. Image deleted from S3`);
+
+      const base64Data = fs.readFileSync(localFilePath).toString('base64');
+      const base64Image = `data:image/jpeg;base64,${base64Data}`;
+      console.log(`[Job ${job.id}] 4. Converted to base64 (Length: ${base64Data.length})`);
+
+      let finalState;
+      try {
+        console.log(`[Job ${job.id}] 5. Invoking LangGraph / Ollama pipeline...`);
+        finalState = await app.invoke({ base64Image });
+        console.log(`[Job ${job.id}] 6. LangGraph execution finished. isValid: ${finalState.isValid}`);
+      } catch (err) {
+        throw new Error(`Extraction failed during LLM invocation: ${err.message}`);
+      }
+
+      if (!finalState.isValid) {
+        console.log(`[Job ${job.id}] 7a. Validation failed, updating DB and Redis to FAILED state.`);
+        await redisClient.hSet(`job:${job.id}`, {
+          state: 'FAILED',
+          failedReason: "Failed to analyze the image clearly. Please ensure the food is well-lit and clearly visible."
+        });
+        await db.query(`UPDATE food_entries SET status = 'FAILED' WHERE job_id = $1`, [job.id]);
+        return { status: 'failed_gracefully' };
+      }
+
+      const { extraction } = finalState;
+      console.log(`[Job ${job.id}] 7b. Validation passed. Updating DB with: ${extraction.item_name} (${extraction.calories} kcal)`);
+
+      const query = `
+        UPDATE food_entries 
+        SET 
+          item_name = $1,
+          quantity = $2,
+          quantity_unit = $3,
+          calories = $4,
+          protein = $5,
+          carbs = $6,
+          fat = $7,
+          micros = $8,
+          status = 'COMPLETED'
+        WHERE job_id = $9
+        RETURNING *
+      `;
+
+      const values = [
+        extraction.item_name || 'Extracted Meal',
+        extraction.quantity || 1,
+        extraction.quantity_unit || 'serving',
+        extraction.calories || 0,
+        extraction.protein || 0,
+        extraction.carbs || 0,
+        extraction.fat || 0,
+        extraction.micros ? JSON.stringify(extraction.micros) : null,
+        job.id
+      ];
+
+      const res = await db.query(query, values);
+      const entry = res.rows[0];
+
+      console.log(`[Job ${job.id}] 8. Fetching timezone for Redis update...`);
+      const jobData = await redisClient.hGetAll(`job:${job.id}`);
+      const timeZone = jobData.timeZone || 'UTC';
+      const dateStr = getLocalYMD(new Date(), timeZone);
+
+      console.log(`[Job ${job.id}] 9. Updating daily totals in Redis for date: ${dateStr}`);
+      const redisKey = `nutrition:daily:${userId}:${dateStr}`;
+      await redisClient.hIncrByFloat(redisKey, 'calories', entry.calories);
+      await redisClient.hIncrByFloat(redisKey, 'protein', entry.protein);
+      await redisClient.hIncrByFloat(redisKey, 'carbs', entry.carbs);
+      await redisClient.hIncrByFloat(redisKey, 'fat', entry.fat);
+
+      console.log(`[Job ${job.id}] --- PROCESSING COMPLETE ---`);
+      return entry;
+    } catch (error) {
+      console.error(`\n[Job ${job.id}] CRITICAL ERROR CAUGHT IN WORKER:`, error);
       await redisClient.hSet(`job:${job.id}`, {
         state: 'FAILED',
-        failedReason: "Failed to analyze the image clearly. Please ensure the food is well-lit and clearly visible."
+        failedReason: error.message
       });
-      return { status: 'failed_gracefully' };
+      await db.query(`UPDATE food_entries SET status = 'FAILED' WHERE job_id = $1`, [job.id]);
+      throw error;
+    } finally {
+      try {
+        if (localFilePath && fs.existsSync(localFilePath)) {
+          fs.unlinkSync(localFilePath);
+          console.log(`[Job ${job.id}] Cleanup: Deleted local temp file.`);
+        }
+      } catch (delErr) {
+        console.error(`[Job ${job.id}] Cleanup Error: Failed to delete local temp file.`, delErr);
+      }
     }
+  }, { connection: bullConnection });
 
-    const { extraction } = finalState;
-    
-    const query = `
-      INSERT INTO food_entries (user_id, meal_type, item_name, quantity, quantity_unit, calories, protein, carbs, fat, micros, logged_at)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW())
-      RETURNING *
-    `;
-    
-    const values = [
-      userId,
-      mealType,
-      extraction.item_name || 'Extracted Meal',
-      extraction.quantity || 1,
-      extraction.quantity_unit || 'serving',
-      extraction.calories || 0,
-      extraction.protein || 0,
-      extraction.carbs || 0,
-      extraction.fat || 0,
-      extraction.micros ? JSON.stringify(extraction.micros) : null
-    ];
-
-    const res = await db.query(query, values);
-    const entry = res.rows[0];
-
-    const dateStr = new Date().toISOString().split('T')[0];
-    const redisKey = `nutrition:daily:${userId}:${dateStr}`;
-    await redisClient.hIncrByFloat(redisKey, 'calories', entry.calories);
-    await redisClient.hIncrByFloat(redisKey, 'protein', entry.protein);
-    await redisClient.hIncrByFloat(redisKey, 'carbs', entry.carbs);
-    await redisClient.hIncrByFloat(redisKey, 'fat', entry.fat);
-    
-    return entry;
-  }, { connection: redisClient });
-
-  worker.on('completed', (job) => console.log(`Job ${job.id} completed successfully`));
-  worker.on('failed', (job, err) => console.error(`Job ${job.id} failed:`, err));
+  worker.on('failed', (job, err) => console.error(`Job ${job.id} officially failed in BullMQ:`, err));
 
   return worker;
 };

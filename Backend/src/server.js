@@ -55,7 +55,7 @@ const nutritionService = new NutritionService(nutritionDao, redisClient);
 const uploadService = new UploadService(s3Client, redisClient);
 const aiService = new AiService(redisClient);
 const authService = new AuthService(authDao);
-const sqsListenerService = new SqsListenerService(aiService, redisClient);
+const sqsListenerService = new SqsListenerService(aiService, redisClient, nutritionDao);
 
 const uploadController = new UploadController(uploadService);
 const aiController = new AiController(aiService, redisClient);
