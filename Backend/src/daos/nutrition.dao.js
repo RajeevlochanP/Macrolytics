@@ -101,6 +101,46 @@ export default class NutritionDao {
     return result.rows;
   }
 
+  async getFoodEntriesPaginated(userId, { startDate, endDate, mealType, page = 1, limit = 20, timeZone = 'UTC' }) {
+    let whereClauses = ['user_id = $1'];
+    let values = [userId];
+    
+    if (startDate) {
+      values.push(timeZone, startDate);
+      whereClauses.push(`DATE(logged_at AT TIME ZONE $${values.length - 1}) >= $${values.length}`);
+    }
+    if (endDate) {
+      values.push(timeZone, endDate);
+      whereClauses.push(`DATE(logged_at AT TIME ZONE $${values.length - 1}) <= $${values.length}`);
+    }
+    if (mealType && mealType !== 'All') {
+      values.push(mealType);
+      whereClauses.push(`meal_type = $${values.length}`);
+    }
+
+    const whereString = whereClauses.join(' AND ');
+
+    const countQuery = `SELECT COUNT(*) FROM food_entries WHERE ${whereString}`;
+    const countResult = await pool.query(countQuery, values);
+    const totalCount = parseInt(countResult.rows[0].count, 10);
+
+    const offset = (page - 1) * limit;
+    const entriesQuery = `
+      SELECT * FROM food_entries 
+      WHERE ${whereString} 
+      ORDER BY logged_at DESC, id DESC 
+      LIMIT $${values.length + 1} OFFSET $${values.length + 2}
+    `;
+    const entriesValues = [...values, limit, offset];
+    
+    const entriesResult = await pool.query(entriesQuery, entriesValues);
+    
+    return {
+      entries: entriesResult.rows,
+      totalCount
+    };
+  }
+
   async getHealthGoals(userId) {
     const query = `SELECT * FROM health_goals WHERE user_id = $1 LIMIT 1`;
     const result = await pool.query(query, [userId]);

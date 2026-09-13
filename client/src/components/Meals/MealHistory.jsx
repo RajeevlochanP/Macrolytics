@@ -1,16 +1,27 @@
 import { useState, useEffect } from 'react';
 import { apiClient } from '../../api/client';
+import FilterBar from './FilterBar';
 
 export default function MealHistory({ reloadCounter }) {
   const [entries, setEntries] = useState([]);
+  const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
   
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({});
 
+  const [filters, setFilters] = useState({
+    startDate: '',
+    endDate: '',
+    mealType: 'All',
+  });
+  
+  const [page, setPage] = useState(1);
+  const limit = 20;
+
   useEffect(() => {
     fetchEntries();
-  }, [reloadCounter]);
+  }, [reloadCounter, filters, page]);
 
   useEffect(() => {
     const hasProcessing = entries.some(e => e.status === 'PROCESSING');
@@ -25,14 +36,36 @@ export default function MealHistory({ reloadCounter }) {
 
   const fetchEntries = async () => {
     try {
-      const today = new Date().toLocaleDateString('en-CA');
-      const data = await apiClient(`/nutrition/entries?localDate=${today}`);
-      setEntries(data);
+      setLoading(true);
+      let url = `/nutrition/entries?page=${page}&limit=${limit}`;
+      if (filters.startDate) url += `&startDate=${filters.startDate}`;
+      if (filters.endDate) url += `&endDate=${filters.endDate}`;
+      if (filters.mealType && filters.mealType !== 'All') url += `&mealType=${filters.mealType}`;
+      
+      const data = await apiClient(url);
+      
+      if (data && typeof data === 'object' && 'entries' in data) {
+        setEntries(data.entries);
+        setTotalCount(data.totalCount);
+      } else {
+        setEntries(data);
+        setTotalCount(data.length);
+      }
     } catch (e) {
       console.error(e);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleFilterChange = (name, value) => {
+    if (name === 'clear') {
+      setFilters({ startDate: '', endDate: '', mealType: 'All' });
+      setPage(1);
+      return;
+    }
+    setFilters(prev => ({ ...prev, [name]: value }));
+    setPage(1); // Reset to page 1 on filter change
   };
 
   const startEdit = (entry) => {
@@ -58,7 +91,7 @@ export default function MealHistory({ reloadCounter }) {
         body: editForm
       });
       setEditingId(null);
-      fetchEntries(); // reload to get exact DB values
+      fetchEntries(); 
     } catch (e) {
       alert('Failed to update entry');
     }
@@ -74,11 +107,16 @@ export default function MealHistory({ reloadCounter }) {
     }
   };
 
-  if (loading) return <div>Loading history...</div>;
+  const totalPages = Math.ceil(totalCount / limit) || 1;
+
+  if (loading && entries.length === 0) return <div>Loading history...</div>;
 
   return (
     <div className="card">
       <h3 style={{ marginTop: 0 }}>Meal History</h3>
+      
+      <FilterBar filters={filters} onFilterChange={handleFilterChange} />
+      
       {entries.length === 0 ? (
         <p>No entries found.</p>
       ) : (
@@ -144,6 +182,24 @@ export default function MealHistory({ reloadCounter }) {
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {totalPages > 1 && (
+        <div className="flex justify-between items-center" style={{ marginTop: '1rem', padding: '1rem', background: 'var(--bg-secondary)', borderRadius: '8px' }}>
+          <button 
+            disabled={page === 1} 
+            onClick={() => setPage(p => Math.max(1, p - 1))}
+          >
+            Previous
+          </button>
+          <span style={{ fontSize: '0.85rem' }}>Page {page} of {totalPages}</span>
+          <button 
+            disabled={page === totalPages} 
+            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+          >
+            Next
+          </button>
         </div>
       )}
     </div>

@@ -27,17 +27,25 @@ export default class NutritionController {
   getEntries = async (req, res) => {
     try {
       const userId = req.user.id;
-      const { limit = 20, lastLoggedAt, lastId, startDate, endDate } = req.query;
+      const { limit = 20, page = 1, mealType, startDate, endDate, lastLoggedAt, lastId } = req.query;
 
       const timeZone = req.headers['x-timezone'] || 'UTC';
 
-      let entries = [];
-      if (startDate && endDate) {
-        entries = await this.nutritionService.nutritionDao.getEntriesByDateRange(userId, startDate, endDate, timeZone);
-      } else {
-        entries = await this.nutritionService.getFoodEntries(userId, parseInt(limit), lastLoggedAt, lastId);
+      // Always return paginated response if requested, otherwise fallback
+      if (req.query.page || startDate || endDate || mealType) {
+        const result = await this.nutritionService.getFoodEntriesPaginated(userId, {
+          startDate,
+          endDate,
+          mealType,
+          page: parseInt(page),
+          limit: parseInt(limit),
+          timeZone
+        });
+        return res.json(result);
       }
-      
+
+      // Fallback for older cursor-based requests if needed
+      let entries = await this.nutritionService.getFoodEntries(userId, parseInt(limit), lastLoggedAt, lastId);
       res.json(entries);
     } catch (error) {
       console.error(error);

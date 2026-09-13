@@ -103,6 +103,10 @@ export default class NutritionService {
     return this.nutritionDao.getFoodEntries(userId, limit, lastLoggedAt, lastId);
   }
 
+  async getFoodEntriesPaginated(userId, options) {
+    return this.nutritionDao.getFoodEntriesPaginated(userId, options);
+  }
+
   async checkGoals(userId, dateStr, timeZone = 'UTC') {
     const goals = await this.nutritionDao.getHealthGoals(userId);
     const summary = await this.getDailySummary(userId, dateStr, timeZone);
