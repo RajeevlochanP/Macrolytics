@@ -1,6 +1,5 @@
 import { tool } from '@langchain/core/tools';
 import { z } from 'zod';
-import { mealTypeEnum } from '../models/schemas.js';
 import pool from '../config/db.js';
 import { getLocalYMD } from '../utils/date.js';
 
@@ -10,9 +9,6 @@ export const createTools = (nutritionService, authService) => {
       try {
         const userId = config?.configurable?.userId;
         const timeZone = config?.configurable?.timeZone || 'UTC';
-
-        console.log("Executing log_meal tool payload:", { userId, timeZone, input });
-        console.log('Logging meal with payload:', { item_name: input.item_name, calories: input.calories, protein: input.protein, carbs: input.carbs, fat: input.fat });
 
         const query = `
           INSERT INTO food_entries (user_id, item_name, quantity, quantity_unit, calories, protein, carbs, fat, meal_type, status)
@@ -31,8 +27,6 @@ export const createTools = (nutritionService, authService) => {
           input.fat,
           input.mealType
         ];
-
-        console.log("DB Query payload:", values);
         
         const result = await pool.query(query, values);
         const entry = result.rows[0];

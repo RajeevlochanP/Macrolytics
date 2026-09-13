@@ -7,7 +7,7 @@ import { Worker } from 'bullmq';
 import { ChatOllama } from '@langchain/ollama';
 import { Annotation, StateGraph, END, START } from '@langchain/langgraph';
 import { HumanMessage } from '@langchain/core/messages';
-import { extractedNutritionSchema } from '../models/schemas.js';
+import { z } from 'zod';
 import db from '../config/db.js';
 import redisClient from '../config/redis.js';
 import s3Client from '../config/s3.js';
@@ -21,7 +21,17 @@ export const startWorker = () => {
     temperature: 0,
   });
 
-  const structuredModel = model.withStructuredOutput(extractedNutritionSchema);
+  const safeWorkerSchema = z.object({
+    item_name: z.string().describe("The name of the food item recognized"),
+    quantity: z.number().describe("Quantity recognized"),
+    quantity_unit: z.string().describe("Unit of quantity (e.g., grams, cups, serving)"),
+    calories: z.number().int().describe("Estimated total calories"),
+    protein: z.number().describe("Estimated protein in grams"),
+    carbs: z.number().describe("Estimated carbs in grams"),
+    fat: z.number().describe("Estimated fat in grams")
+  });
+
+  const structuredModel = model.withStructuredOutput(safeWorkerSchema);
 
   const ExtractorState = Annotation.Root({
     base64Image: Annotation({ reducer: (x, y) => y || x, default: () => "" }),
@@ -37,7 +47,7 @@ export const startWorker = () => {
       const response = await structuredModel.invoke([
         new HumanMessage({
           content: [
-            { type: "text", text: "Extract nutritional information from this image. If you cannot determine the information, return an empty structure, but do not guess." },
+            { type: "text", text: "Extract nutritional information from this image. If you cannot determine the information, return an empty structure, but do not guess. DO NOT hallucinate extra fields." },
             { type: "image_url", image_url: { url: base64Image } }
           ]
         })

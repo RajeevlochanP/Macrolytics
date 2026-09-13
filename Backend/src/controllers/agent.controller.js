@@ -106,8 +106,10 @@ export default class AgentController {
 
       let isLeakingJSON = false;
 
+      const validStreamingNodes = ["meal_logger", "analytics", "profile", "chitchat"];
+
       for await (const event of stream) {
-        if (event.event === "on_chat_model_stream" && event.metadata?.langgraph_node === "agent") {
+        if (event.event === "on_chat_model_stream" && validStreamingNodes.includes(event.metadata?.langgraph_node)) {
           const chunk = event.data.chunk;
           const content = chunk.content;
           
