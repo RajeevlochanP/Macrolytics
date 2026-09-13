@@ -1,443 +1,717 @@
-\documentclass[11pt,a4paper]{article}
+\documentclass[11pt,a4paper,twoside]{article}
 
+% ---------- Core typography & layout ----------
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
 \usepackage{lmodern}
-\usepackage{geometry}
-\geometry{margin=1in}
-\usepackage{hyperref}
-\usepackage{xcolor}
+\usepackage{microtype}
+\usepackage[a4paper,top=23mm,bottom=24mm,inner=24mm,outer=20mm,headheight=15pt]{geometry}
+\usepackage{setspace}
+\setstretch{1.08}
+\usepackage{parskip}
+\setlength{\parskip}{5pt plus 1pt minus 1pt}
+\setlength{\parindent}{0pt}
+\usepackage{ragged2e}
+
+% ---------- Tables / lists / boxes ----------
 \usepackage{booktabs}
 \usepackage{tabularx}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage[most]{tcolorbox}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{lastpage}
+\usepackage{needspace}
+\usepackage{caption}
+\usepackage{float}
+\usepackage{placeins}
+
+% ---------- Mathematics / code ----------
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{listings}
+
+% ---------- Graphics ----------
 \usepackage{tikz}
-\usetikzlibrary{positioning, shapes.geometric, arrows.meta, fit, calc, backgrounds, shadows}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,fit,calc,backgrounds,shadows.blur,decorations.pathreplacing}
 
-% Styling definitions
-\definecolor{primary}{RGB}{44, 62, 80}
-\definecolor{secondary}{RGB}{52, 73, 94}
-\definecolor{accent}{RGB}{41, 128, 185}
-\definecolor{lightgray}{RGB}{248, 249, 250}
-
+% ---------- Links ----------
+\usepackage{xcolor}
+\usepackage{hyperref}
+\definecolor{ink}{RGB}{38,47,56}
+\definecolor{muted}{RGB}{94,105,116}
+\definecolor{brand}{RGB}{35,108,146}
+\definecolor{brandDark}{RGB}{24,79,108}
+\definecolor{brandSoft}{RGB}{232,244,249}
+\definecolor{mint}{RGB}{231,246,240}
+\definecolor{goldSoft}{RGB}{251,246,227}
+\definecolor{line}{RGB}{214,222,228}
+\definecolor{paper}{RGB}{250,251,252}
+\definecolor{codebg}{RGB}{246,248,250}
 \hypersetup{
-    colorlinks=true,
-    linkcolor=accent,
-    urlcolor=accent,
+  colorlinks=true,
+  linkcolor=brandDark,
+  urlcolor=brandDark,
+  citecolor=brandDark,
+  pdftitle={Macrolytics - System Architecture and AI Integration},
+  pdfauthor={Architectural Design & Optimizations}
 }
 
-% TikZ Styles for Textbook-Quality Diagrams
+% ---------- Page chrome ----------
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[LE]{\small\sffamily\color{muted}\textsc{Macrolytics}}
+\fancyhead[RO]{\small\sffamily\color{muted}\textsc{Architecture \& AI Integration}}
+\fancyfoot[C]{\small\sffamily\color{muted}\thepage\ / \pageref{LastPage}}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0pt}
+
+% ---------- Headings ----------
+\titleformat{\section}
+  {\needspace{5\baselineskip}\Large\bfseries\sffamily\color{brandDark}}
+  {\thesection}{0.65em}{}
+  [\vspace{2pt}\color{brand}\rule{\textwidth}{1.1pt}]
+\titlespacing*{\section}{0pt}{14pt plus 3pt minus 2pt}{7pt}
+
+\titleformat{\subsection}
+  {\needspace{4\baselineskip}\large\bfseries\sffamily\color{ink}}
+  {\thesubsection}{0.55em}{}
+\titlespacing*{\subsection}{0pt}{8pt plus 2pt minus 1pt}{4pt}
+
+% ---------- Compact lists ----------
+\setlist[itemize]{leftmargin=1.25em,itemsep=4pt,topsep=4pt,parsep=0pt}
+
+% ---------- Tables ----------
+\newcolumntype{Y}{>{\RaggedRight\arraybackslash}X}
+\renewcommand{\arraystretch}{1.08}
+\captionsetup{font={small,sf},labelfont={bf,color=brandDark},skip=7pt}
+
+% ---------- Code style ----------
+\lstset{
+  backgroundcolor=\color{codebg},
+  basicstyle=\ttfamily\small,
+  columns=fullflexible,
+  keepspaces=true,
+  breaklines=true,
+  frame=single,
+  rulecolor=\color{line},
+  framerule=0.4pt,
+  xleftmargin=6pt,
+  xrightmargin=6pt,
+  aboveskip=5pt,
+  belowskip=5pt
+}
+
+% ---------- Callout boxes ----------
+\newtcolorbox{introbox}{
+  enhanced,
+  colback=brandSoft,
+  colframe=brand!45!white,
+  boxrule=0.6pt,
+  arc=5pt,
+  left=10pt,right=10pt,top=8pt,bottom=8pt,
+  borderline west={3pt}{0pt}{brand},
+  fonttitle=\bfseries\sffamily\color{brandDark}
+}
+\newtcolorbox{designbox}[1]{
+  enhanced,
+  colback=white,
+  colframe=line,
+  boxrule=0.5pt,
+  arc=5pt,
+  left=10pt,right=10pt,top=8pt,bottom=8pt,
+  title={#1},
+  fonttitle=\bfseries\sffamily\color{brandDark}
+}
+
+% ---------- TikZ styles ----------
 \tikzset{
-    base/.style={draw=primary, thick, align=center, font=\small\sffamily, fill=white, drop shadow={opacity=0.1, shadow xshift=2pt, shadow yshift=-2pt}},
-    component/.style={base, rectangle, rounded corners=4pt, minimum width=2.8cm, minimum height=1.2cm},
-    database/.style={base, cylinder, shape border rotate=90, aspect=0.25, minimum width=2.2cm, minimum height=1.6cm},
-    router/.style={base, diamond, aspect=2, minimum width=2.5cm, minimum height=1.2cm},
-    queue/.style={base, rectangle, minimum width=3cm, minimum height=1cm, path picture={
-        \draw[primary] ([xshift=1cm]path picture bounding box.north west) -- ([xshift=1cm]path picture bounding box.south west);
-        \draw[primary] ([xshift=2cm]path picture bounding box.north west) -- ([xshift=2cm]path picture bounding box.south west);
-    }},
-    arrow/.style={-Stealth, thick, draw=primary!80},
-    dashed_arrow/.style={-Stealth, thick, dashed, draw=primary!80},
-    group/.style={draw=primary!30, dashed, rounded corners, fill=lightgray, inner sep=10pt}
+  nodeBase/.style={
+    draw=brandDark!75,
+    line width=0.8pt,
+    rounded corners=4pt,
+    align=center,
+    font=\sffamily\small,
+    minimum height=10mm,
+    inner sep=7pt,
+    fill=white,
+    blur shadow={shadow blur steps=4,shadow xshift=0.5pt,shadow yshift=-0.7pt,shadow opacity=20}
+  },
+  app/.style={nodeBase, minimum width=27mm},
+  data/.style={nodeBase, fill=mint, minimum width=29mm},
+  storage/.style={nodeBase, fill=goldSoft, minimum width=27mm},
+  async/.style={nodeBase, fill=brandSoft, minimum width=28mm},
+  decision/.style={nodeBase, diamond, aspect=1.8, minimum width=24mm, fill=white},
+  tier/.style={
+    draw=line,
+    dashed,
+    rounded corners=7pt,
+    inner xsep=12pt, inner ysep=17pt,
+    fill=paper
+  },
+  tierTitle/.style={font=\sffamily\bfseries\footnotesize\color{brandDark},fill=paper,inner sep=2pt},
+  flow/.style={-{Stealth[length=2.8mm]}, line width=0.85pt, draw=brandDark!80},
+  flowSoft/.style={-{Stealth[length=2.8mm]}, line width=0.75pt, draw=muted!90, dashed},
+  edgeLabel/.style={font=\sffamily\scriptsize, text=muted, fill=white, inner sep=2pt}
 }
 
-\title{\textbf{\Huge Macrolytics}\\[0.5em] \Large Backend System Architecture \& API Design}
-\author{System Design Documentation}
-\date{}
+% ---------- Title helpers ----------
+\newcommand{\docsubtitle}{System Architecture \& AI Integration}
+\newcommand{\smallcaps}[1]{{\sffamily\bfseries\textsc{#1}}}
 
 \begin{document}
 
-\maketitle
+% ==================== COVER ====================
+\begin{titlepage}
+  \thispagestyle{empty}
+  \vspace*{18mm}
+  \begin{flushleft}
+    {\sffamily\color{brand}\bfseries\small ARCHITECTURE HANDBOOK}\\[8mm]
+    {\sffamily\bfseries\fontsize{31}{35}\selectfont\color{ink} Macrolytics}\\[3mm]
+    {\sffamily\fontsize{18}{23}\selectfont\color{brandDark} \docsubtitle}
+  \end{flushleft}
 
+  \vspace{16mm}
+  \begin{tcolorbox}[enhanced,colback=paper,colframe=line,boxrule=0.5pt,arc=7pt,left=14pt,right=14pt,top=12pt,bottom=12pt]
+    \sffamily
+    \textbf{Purpose}\par
+    A readable technical reference for the backend architecture, AI agent topologies,
+    data-flow decisions, and REST API surface of Macrolytics.
+
+    \vspace{7pt}
+    \textbf{Design emphasis}\par
+    Stateless request handling, direct object-storage uploads, asynchronous AI inference,
+    Redis-backed aggregation, PostgreSQL persistence, and deterministic agent routing.
+  \end{tcolorbox}
+
+  \vfill
+  \begin{flushleft}
+    {\sffamily\color{muted}\small Architectural Design \& Optimizations}\\
+    {\sffamily\color{muted}\small Technical reference edition}
+  \end{flushleft}
+\end{titlepage}
+
+% ==================== TOC ====================
+\pagenumbering{roman}
+\setcounter{page}{1}
+\tableofcontents
+\clearpage
+\setcounter{page}{1}
+\def\theHpage{content.\arabic{page}}
+\pagenumbering{arabic}
+
+% ==================== 1. OVERVIEW ====================
 \section{System Overview}
-Macrolytics relies on a decoupled, distributed backend architecture designed to handle deterministic HTTP requests, asynchronous AI inference, and atomic data aggregation concurrently. The system prioritizes a completely stateless web tier, event-driven background processing, and strict multi-agent routing to ensure high availability and low latency.
 
-\vspace{1.5em}
+\begin{introbox}
+The Macrolytics backend uses a decoupled, event-driven architecture designed to support
+fast deterministic API requests alongside higher-latency asynchronous AI workloads.
+Stateless web servers, direct object storage, and queue-backed workers keep request handling
+separate from storage and compute-intensive inference.
+\end{introbox}
 
-% \begin{center}
-% \begin{tikzpicture}[node distance=1.5cm and 2cm]
+The overall architecture separates the system into four practical concerns: request ingress,
+stateless application handling, durable/cache data services, and asynchronous AI processing.
+This separation reduces the coupling between user-facing traffic and long-running inference jobs
+and provides a clear path to horizontal scaling \cite{xu2020system}.
 
-% % External
-% \node[component] (client) {Client\\(Web/Mobile)};
-% \node[router, right=of client] (lb) {Load Balancer};
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[x=1cm,y=1cm]
 
-% % Web Tier
-% \node[component, above right=0.5cm and 1.5cm of lb] (api1) {API Server 1};
-% \node[component, below right=0.5cm and 1.5cm of lb] (api2) {API Server 2};
+  % =========================================================
+  % COMPONENTS
+  % =========================================================
 
-% \begin{scope}[on background layer]
-%     \node[group, fit=(api1) (api2)] (webtier) {};
-%     \node[above, font=\sffamily\bfseries\small, text=primary] at (webtier.north) {Stateless Web Tier};
-% \end{scope}
+  \node[app] (client) at (0,4.3)
+    {Client\\(Web / Mobile)};
 
-% % Data Tier
-% \node[database, right=2.5cm of api1] (db) {PostgreSQL\\(Primary)};
-% \node[database, right=2.5cm of api2] (redis) {Redis\\(Cache \& Pub/Sub)};
+  \node[app] (lb) at (3.15,4.3)
+    {Load\\Balancer};
 
-% % Async Tier
-% \node[queue, below=1.5cm of redis] (bullmq) {BullMQ};
-% \node[component, left=1.5cm of bullmq] (worker) {AI Worker\\(LLaVA)};
-% \node[component, right=1.5cm of worker] (s3) {AWS S3};
+  \node[app] (api1) at (6.25,5.15)
+    {API Server\\1};
 
-% \begin{scope}[on background layer]
-%     \node[group, fit=(db) (redis) (bullmq) (worker) (s3)] (datatier) {};
-%     \node[above, font=\sffamily\bfseries\small, text=primary] at (datatier.north) {Data \& Async Processing Tier};
-% \end{scope}
+  \node[app] (api2) at (6.25,2.85)
+    {API Server 2\\(SQS Poller)};
 
-% % Routing
-% \draw[arrow] (client) -- node[above, font=\footnotesize] {HTTPS} (lb);
-% \draw[arrow] (lb) |- (api1);
-% \draw[arrow] (lb) |- (api2);
-
-% \draw[arrow] (api1) -- (db);
-% \draw[arrow] (api2) -- (db);
-% \draw[arrow] (api1) -- (redis);
-% \draw[arrow] (api2) -- (redis);
-
-% \draw[arrow] (api2) |- (bullmq);
-% \draw[arrow] (bullmq) -- (worker);
-% \draw[dashed_arrow] (worker) -- node[above, font=\footnotesize] {Fetch Image} (s3);
-% \draw[dashed_arrow] (worker) -| node[right, font=\footnotesize] {Write Status} (db);
-% \draw[dashed_arrow] (worker) -- node[left, font=\footnotesize] {Pub/Sub Event} (redis);
-
-% \end{tikzpicture}
-% \end{center}
-\begin{center}
-\begin{tikzpicture}[
-    >=Stealth,
-    node distance=1.4cm and 1.6cm,
-    % -------------------------------------------------
-    % Node styles
-    % -------------------------------------------------
-    component/.style={
-        rectangle,
-        rounded corners=3pt,
-        draw=black!65,
-        fill=white,
-        minimum width=2.4cm,
-        minimum height=0.85cm,
-        align=center,
-        font=\sffamily\small
-    },
-    loadbalancer/.style={
-        rectangle,
-        rounded corners=3pt,
-        draw=black!65,
-        fill=white,
-        minimum width=2.5cm,
-        minimum height=0.85cm,
-        align=center,
-        font=\sffamily\small
-    },
-    database/.style={
-        cylinder,
-        cylinder uses custom fill,
-        cylinder body fill=white,
-        cylinder end fill=white,
-        draw=black!65,
-        minimum width=2.3cm,
-        minimum height=1.05cm,
-        aspect=0.35,
-        align=center,
-        font=\sffamily\small
-    },
-    queue/.style={
-        rectangle,
-        rounded corners=3pt,
-        draw=black!65,
-        fill=white,
-        minimum width=2.3cm,
-        minimum height=0.85cm,
-        align=center,
-        font=\sffamily\small
-    },
-    % -------------------------------------------------
-    % Tier containers
-    % -------------------------------------------------
-    tier/.style={
-        rectangle,
-        rounded corners=6pt,
-        draw=black!35,
-        inner sep=0.5cm
-    },
-    tierlabel/.style={
-        font=\sffamily\bfseries\small,
-        fill=white,
-        inner sep=3pt
-    },
-    % -------------------------------------------------
-    % Connections
-    % -------------------------------------------------
-    arrow/.style={
-        ->,
-        thick,
-        draw=black!70
-    },
-    dashedarrow/.style={
-        ->,
-        dashed,
-        thick,
-        draw=black!60
-    },
-    edgelabel/.style={
-        font=\sffamily\footnotesize,
-        fill=white,
-        inner sep=2pt
-    }
-]
-
-% =====================================================
-% External Client
-% =====================================================
-
-\node[component] (client) {Client\\(Web / Mobile)};
-
-% =====================================================
-% Load Balancer
-% =====================================================
-
-\node[loadbalancer, right=1.5cm of client] (lb)
-    {Load Balancer};
-
-% =====================================================
-% Stateless Web Tier
-% =====================================================
-
-\node[component, above right=0.7cm and 1.5cm of lb] (api1)
-    {API Server 1};
-
-\node[component, below right=0.7cm and 1.5cm of lb] (api2)
-    {API Server 2};
-
-\node[tier,
-      fit=(api1) (api2),
-    label={[tierlabel]above:Stateless Web Tier}] (webtier) {};
-
-% =====================================================
-% Data Tier
-% =====================================================
-
-\node[database, right=2.2cm of api1] (postgres)
+  \node[data] (postgres) at (10.25,5.15)
     {PostgreSQL};
 
-\node[database, right=2.2cm of api2] (redis)
-    {Redis\\Cache / Pub/Sub};
+  \node[data] (redis) at (10.25,2.85)
+    {Redis};
 
-\node[tier,
-      fit=(postgres) (redis),
-    label={[tierlabel]above:Data Tier}] (datatier) {};
-
-% =====================================================
-% Asynchronous Processing
-% =====================================================
-
-\node[queue, below=1.6cm of redis] (bullmq)
-    {BullMQ};
-
-\node[component, right=1.6cm of bullmq] (worker)
-    {AI Worker\\(LLaVA)};
-
-\node[component, right=1.6cm of worker] (s3)
+  \node[storage] (s3) at (3.15,-0.75)
     {AWS S3};
 
-\node[tier,
-      fit=(bullmq) (worker) (s3),
-    label={[tierlabel]above:Async Processing}] (asynctier) {};
+  \node[async] (sqs) at (6.25,-0.75)
+    {AWS SQS};
 
-% =====================================================
-% Main Request Flow
-% =====================================================
+  \node[async] (queue) at (10.25,-0.75)
+    {BullMQ\\Queue};
 
-\draw[arrow]
-    (client) -- node[edgelabel, above]{HTTPS} (lb);
+  \node[async] (worker) at (14.15,-0.75)
+    {AI Worker\\(LLaVA)};
 
-\draw[arrow]
-    (lb) -- (api1);
 
-\draw[arrow]
-    (lb) -- (api2);
+  % =========================================================
+  % TIER FRAMES
+  % =========================================================
 
-% =====================================================
-% API → PostgreSQL
-% =====================================================
+  \begin{scope}[on background layer]
 
-\draw[arrow]
-    (api1) -- (postgres);
+    \node[
+      tier,
+      fit=(api1)(api2),
+      inner sep=14pt
+    ] (webtier) {};
 
-\draw[arrow]
-    (api2) -- (postgres);
+    \node[
+      tierTitle,
+      anchor=south
+    ] at ([yshift=2pt]webtier.north)
+      {STATELESS WEB TIER};
 
-% =====================================================
-% API → Redis
-% =====================================================
 
-\draw[arrow]
-    (api1) -- (redis);
+    \node[
+      tier,
+      fit=(postgres)(redis),
+      inner sep=14pt
+    ] (datatier) {};
 
-\draw[arrow]
-    (api2) -- (redis);
+    \node[
+      tierTitle,
+      anchor=south
+    ] at ([yshift=2pt]datatier.north)
+      {DATA TIER};
 
-% =====================================================
-% Async Job Flow
-% =====================================================
 
-\draw[arrow]
-    (api2) |- node[
-        edgelabel,
-        pos=0.25,
-        right
-    ]{Enqueue Job} (bullmq);
+    \node[
+      tier,
+      fit=(s3)(sqs)(queue)(worker),
+      inner sep=14pt
+    ] (asynctier) {};
 
-\draw[arrow]
-    (bullmq) -- (worker);
+    \node[
+      tierTitle,
+      anchor=south
+    ] at ([yshift=2pt]asynctier.north)
+      {ASYNC PROCESSING};
 
-% =====================================================
-% Worker → S3
-% =====================================================
+  \end{scope}
 
-\draw[dashedarrow]
-    (worker) -- node[
-        edgelabel,
-        above
-    ]{Fetch Image} (s3);
 
-% =====================================================
-% Worker → PostgreSQL
-% =====================================================
+  % =========================================================
+  % PRIMARY REQUEST PATH
+  % =========================================================
 
-\draw[dashedarrow]
-    (worker) -| node[
-        edgelabel,
-        pos=0.25,
-        below
-    ]{Update Status} (postgres);
+  % Client -> Load Balancer
+  \draw[flow]
+    (client.east)
+    -- node[edgeLabel,above]{HTTPS}
+    (lb.west);
 
-% =====================================================
-% Worker → Redis
-% =====================================================
+  % Load Balancer -> Web Tier
+  \draw[flow]
+    (lb.east)
+    -- (webtier.west);
 
-\draw[dashedarrow]
-    (worker) |- node[
-        edgelabel,
-        pos=0.25,
-        right
-    ]{Pub/Sub Event} (redis);
+  % Web Tier -> Data Tier
+  \draw[flow]
+    (webtier.east)
+    -- (datatier.west);
+
+  % API2 -> BullMQ
+  \draw[flow]
+    (api2.east)
+    -- ++(1.0,0)
+    |- node[edgeLabel,right,pos=0.72]{Enqueue}
+    (queue.north);
+
+  % BullMQ -> AI Worker
+  \draw[flow]
+    (queue.east)
+    -- (worker.west);
+
+
+  % =========================================================
+  % SUPPORTING / ASYNC INTERACTIONS
+  % =========================================================
+
+  % ---------------------------------------------------------
+  % Client -> S3
+  % Routed on the LEFT so it never crosses the main path.
+  % ---------------------------------------------------------
+  \draw[flowSoft]
+    (client.south)
+    -- ++(0,-0.75)
+    -| node[
+      edgeLabel,
+      left,
+      pos=0.55
+    ]{Direct upload}
+    (s3.north);
+
+
+  % ---------------------------------------------------------
+  % S3 -> SQS
+  % Straight horizontal event path.
+  % ---------------------------------------------------------
+  \draw[flowSoft]
+    (s3.east)
+    -- node[
+      edgeLabel,
+      above
+    ]{Event}
+    (sqs.west);
+
+
+  % ---------------------------------------------------------
+  % SQS -> API2
+  % Routed around the left/bottom side of API2.
+  % ---------------------------------------------------------
+  \draw[flowSoft]
+    (sqs.north east)
+    -- ++(0,0.55)
+    -| node[
+      edgeLabel,
+      right,
+      pos=0.48
+    ]{Poll}
+    (api2.south west);
+
+
+  % ---------------------------------------------------------
+  % Worker -> S3
+  % Routed underneath the async tier so it does not
+  % cross BullMQ or SQS connections.
+  % ---------------------------------------------------------
+  \draw[flowSoft]
+    (worker.south)
+    -- ++(0,-0.65)
+    -| node[
+      edgeLabel,
+      below,
+      pos=0.50
+    ]{Fetch / delete}
+    (s3.south);
+
+
+  % ---------------------------------------------------------
+  % Worker -> Data Tier
+  % Routed upward on the FAR RIGHT to avoid all other edges.
+  % ---------------------------------------------------------
+  \draw[flowSoft]
+    (worker.north)
+    -- ++(0,1.15)
+    -| ++(-0.65,0)
+    |- node[
+      edgeLabel,
+      right,
+      pos=0.72
+    ]{Events / status}
+    (datatier.south);
+
 
 \end{tikzpicture}
-\end{center}
+\caption{Macrolytics backend architecture. Solid arrows represent the primary request or job path; dashed arrows represent supporting storage and event interactions.}
+\end{figure}
+\FloatBarrier
 
-\newpage
+% ==================== 2. OPTIMIZATIONS ====================
+\section{Core Architectural Optimizations}
 
-\section{Architectural Decisions \& Complexities}
+The following design decisions address the system's principal scalability constraints: large binary uploads,
+long-running inference, session state, high-frequency dashboard reads, and transactional persistence.
 
-The backend relies on several specific design choices to optimize for scalability, cost, and the unique constraints of local Large Language Models (LLMs).
+\subsection{Decoupled Image Processing \& Direct AWS Uploads}
+\begin{designbox}{Why this matters}
+Routing large image binaries through the Node.js event loop increases memory pressure, while local LLaVA inference
+can take 10--30 seconds per request. The web tier should therefore avoid owning either the binary stream or the GPU-bound work.
+\end{designbox}
 
 \begin{itemize}
-    \item \textbf{Stateless Web Tier via Encrypted Chat Context (Innovation):} 
-    Traditional chat applications utilize stateful servers (binding a user to a specific server via WebSockets/sticky sessions) to maintain conversational memory. To keep our web tier completely stateless and horizontally scalable, we implemented a cryptographic context-passing innovation. 
-    \begin{itemize}
-        \item The AI agent's conversation summary and recent message array are encrypted using \texttt{A256GCM} on the server and sent to the client.
-        \item The client stores this token and passes it back on the next request. 
-        \item \textit{Justification:} This forces the LLM context to live client-side securely, completely eliminating server-side memory bottlenecks and allowing any API server to seamlessly pick up the conversation.
-    \end{itemize}
-
-    \item \textbf{Redis for Caching and Pub/Sub Messaging:}
-    \begin{itemize}
-        \item \textbf{Caching:} Daily macro aggregates are stored using Redis Hashes. Operations utilize \texttt{hIncrByFloat} for thread-safe, atomic increments, providing $O(1)$ read complexity for the dashboard, drastically reducing relational database load.
-        \item \textbf{Pub/Sub Model:} We utilize Redis Pub/Sub to solve the asynchronous communication gap between the background AI workers and the stateless API servers. When a BullMQ worker finishes processing a vision task, it publishes a completion event to Redis. Subscribed API servers instantly receive this event and can push real-time Server-Sent Events (SSE) to the client, entirely avoiding inefficient database polling.
-    \end{itemize}
-
-    \item \textbf{Asynchronous Processing for Vision AI (BullMQ):}
-    \begin{itemize}
-        \item Local vision model inference (LLaVA) takes 10--30 seconds. Synchronous execution would block the Node.js event loop and trigger HTTP timeouts.
-        \item \textit{Justification:} Event-driven decoupling. The API instantly returns a HTTP 202 (Accepted) with a \texttt{jobId}, while BullMQ manages retries, failure states, and concurrency limits for the GPU-bound workers safely in the background.
-    \end{itemize}
-
-    \item \textbf{Secure S3-to-Local Data Pipeline:}
-    \begin{itemize}
-        \item Local LLMs lack the native architecture to securely resolve remote AWS S3 URIs. 
-        \item \textit{Justification:} The worker acts as a secure proxy. It downloads the S3 image to local \texttt{/temp}, converts it to Base64 for the LLM, and immediately deletes both the S3 object and local file upon completion. This strict ephemeral storage strategy guarantees user privacy and minimizes cloud storage costs.
-    \end{itemize}
-
-    \item \textbf{Relational Database (PostgreSQL):}
-    \begin{itemize}
-        \item \textit{Justification:} Nutrition logging requires complex, paginated time-range queries and aggregate mathematical functions (\texttt{SUM}). NoSQL data stores handle long-tail random access poorly when complex relations are required. PostgreSQL natively supports the ACID transactions required for accurate macro tracking.
-    \end{itemize}
+  \item \textbf{Implementation:} The client requests a secure pre-signed URL and uploads the binary directly to AWS S3. S3 triggers an \texttt{ObjectCreated} event to AWS SQS. A background poller on the API reads this event, creates a ``Processing'' database stub, and enqueues a lightweight job reference to BullMQ.
+  \item \textbf{Justification:} Storage and compute are completely decoupled from the stateless web tier. Heavy file streaming bypasses the API servers entirely, while GPU-bound inference is safely isolated in background workers \cite{xu2020system}.
 \end{itemize}
 
-\newpage
+\subsection{Stateless Web Tier via JOSE \& JWT Context}
+\begin{itemize}
+  \item \textbf{Challenge:} Binding conversational state to a specific server introduces sticky-session requirements and weakens horizontal scalability.
+  \item \textbf{Implementation:} The system uses a $100\%$ stateless web tier. Chat history and operational context are encrypted with JOSE/JWT using \texttt{A256GCM} and returned to the client, which sends the encrypted context on the next request.
+  \item \textbf{Justification:} Any API server can handle the next turn without depending on in-memory conversational state \cite{xu2020system}.
+\end{itemize}
 
-\section{AI Agent Orchestration (LangGraph)}
+\subsection{Redis Key Isolation \& Event-Driven Pub/Sub}
+\begin{itemize}
+  \item \textbf{Key design:} Redis stores focused daily macro aggregates rather than attempting to mirror the entire database. The key format is \texttt{nutrition:daily:\{userId\}:\{dateStr\}}.
+  \item \textbf{Atomic operations:} \texttt{hIncrByFloat} updates aggregate values atomically, avoiding repeated SQL aggregation work for dashboard reads.
+  \item \textbf{Pub/Sub:} Background workers publish completion events to Redis channels. API servers subscribe and can stream status back to the client through Server-Sent Events (SSE) \cite{xu2020system}.
+\end{itemize}
 
-A standard ReAct (Reasoning and Acting) loop fails frequently on smaller local models (e.g., Llama 3.1 8B) due to high cognitive load, resulting in infinite tool-calling loops and dropped parameters. To mitigate this, we implemented a \textbf{Supervisor Orchestrator Pattern}.
+\subsection{SQL vs. NoSQL Database Selection}
+\begin{designbox}{Selection}
+\textbf{PostgreSQL (Relational SQL)}
+\end{designbox}
+\begin{itemize}
+  \item \textbf{Justification:} Nutrition tracking requires transactional integrity, time-range filtering, pagination, and historical aggregation. PostgreSQL provides the relational structure and ACID guarantees needed for consistent macro tracking \cite{xu2020system}.
+\end{itemize}
 
-\vspace{1em}
-\begin{center}
-\begin{tikzpicture}[node distance=1.2cm and 2.5cm]
+\begin{designbox}{Architecture at a glance}
+\begin{tabularx}{\linewidth}{>{\bfseries\sffamily}p{35mm} Y}
+Ingress & HTTPS requests enter through the load balancer; large images bypass the API and upload directly to S3. \\[2pt]
+Web tier & API servers remain stateless and delegate long-running AI work to BullMQ. \\[2pt]
+Data tier & PostgreSQL is the durable relational store; Redis provides focused aggregates and event fan-out. \\[2pt]
+AI tier & Background workers fetch images from S3, run LLaVA inference, and validate structured output before persistence.
+\end{tabularx}
+\end{designbox}
 
-% Nodes
-\node[component] (input) {Encrypted Context\\+ User Query};
-\node[router] (supervisor) {Intent\\Supervisor};
-\node[component, above right=0.8cm and 2cm of supervisor] (meal) {Meal Extractor\\(Structured Output)};
-\node[component, right=2cm of supervisor] (analytics) {Analytics\\Agent (RAG)};
-\node[component, below right=0.8cm and 2cm of supervisor] (chitchat) {Chit-Chat\\Agent};
-\node[component, right=2.5cm of analytics] (output) {Final\\Response};
+% ==================== 3. AI ARCHITECTURES ====================
+\section{Dual AI Agent Architectures}
 
-% Routing
-\draw[arrow] (input) -- (supervisor);
-\draw[arrow] (supervisor) |- node[above left, font=\footnotesize] {LOG\_MEAL} (meal);
-\draw[arrow] (supervisor) -- node[above, font=\footnotesize] {ANALYTICS} (analytics);
-\draw[arrow] (supervisor) |- node[below left, font=\footnotesize] {CHAT} (chitchat);
+The system uses two AI topologies, each optimized for a different operational constraint: low-latency deterministic routing for conversation,
+and high-confidence schema validation for asynchronous image understanding.
 
-\draw[dashed_arrow] (meal) -| (output);
-\draw[dashed_arrow] (analytics) -- (output);
-\draw[dashed_arrow] (chitchat) -| (output);
+\subsection{Conversational Chat: Supervisor Multi-Agent Architecture}
 
-% Background
-\begin{scope}[on background layer]
-    \node[group, fit=(supervisor) (meal) (analytics) (chitchat)] (graph) {};
-    \node[above, font=\sffamily\bfseries\small, text=primary] at (graph.north) {LangGraph State Machine};
-\end{scope}
+Standard ReAct-style loops can overload smaller local models when one prompt must simultaneously manage tone, memory, intent classification,
+and strict JSON formatting. The design therefore uses a \textbf{Supervisor Multi-Agent Pattern} \cite{wu2023autogen}.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[x=1cm,y=1cm]
+
+  % =========================================================
+  % COMPONENTS
+  % =========================================================
+
+  \node[app] (input) at (0,0)
+    {Encrypted\\Context};
+
+  % Increased X distance to 4.0 to prevent diamond overlap
+  \node[decision] (supervisor) at (4.0,0)
+    {Intent\\Supervisor};
+
+  % Increased X distance to 8.5 to give the diamond breathing room
+  \node[app] (meal) at (8.5, 1.8)
+    {Meal Extractor\\(Data Node)};
+
+  \node[app] (analytics) at (8.5, 0)
+    {Analytics\\(RAG Node)};
+
+  \node[app] (chat) at (8.5, -1.8)
+    {Chit-Chat\\(Convo Node)};
+
+  % Increased X distance to 12.5 for the final node
+  \node[app] (output) at (12.5, 0)
+    {Final\\Response};
+
+
+  % =========================================================
+  % LANGGRAPH FRAME
+  % =========================================================
+
+  \begin{scope}[on background layer]
+    \node[
+      tier,
+      fit=(supervisor)(meal)(analytics)(chat),
+      inner sep=18pt % Increased padding to clear node edges
+    ] (graph) {};
+
+    \node[
+      tierTitle,
+      anchor=south
+    ] at ([yshift=5pt]graph.north)
+      {LANGGRAPH STATE MACHINE -- REAL TIME};
+  \end{scope}
+
+
+  % =========================================================
+  % INPUT -> SUPERVISOR
+  % =========================================================
+
+  \draw[flow]
+    (input.east)
+    -- (supervisor.west);
+
+
+  % =========================================================
+  % SUPERVISOR -> SPECIALIZED NODES
+  % =========================================================
+
+  \draw[flow]
+    (supervisor.45)
+    to[
+      out=45,
+      in=180,
+      looseness=0.8
+    ]
+    (meal.west);
+
+  \draw[flow]
+    (supervisor.east)
+    -- (analytics.west);
+
+  \draw[flow]
+    (supervisor.-45)
+    to[
+      out=-45,
+      in=180,
+      looseness=0.8
+    ]
+    (chat.west);
+
+
+  % =========================================================
+  % SPECIALIZED NODES -> FINAL RESPONSE
+  % =========================================================
+
+  \draw[flowSoft]
+    (meal.east)
+    to[
+      out=0,
+      in=160,
+      looseness=0.9
+    ]
+    (output.north west);
+
+  \draw[flowSoft]
+    (analytics.east)
+    -- (output.west);
+
+  \draw[flowSoft]
+    (chat.east)
+    to[
+      out=0,
+      in=-160,
+      looseness=0.9
+    ]
+    (output.south west);
 
 \end{tikzpicture}
-\end{center}
+\caption{Supervisor routing keeps intent classification separate from specialized sub-agents.}
+\end{figure}
+\FloatBarrier
 
-\subsection{Orchestration Logic}
 \begin{itemize}
-    \item \textbf{Intent Routing:} The Supervisor node utilizes \texttt{withStructuredOutput} to deterministically classify the user's intent. The LLM does not execute tools; it purely routes.
-    \item \textbf{Domain Isolation:} By routing to specialized sub-agents, the system drastically shrinks the prompt size and cognitive load for each task. The \textit{Meal Extractor} forces JSON generation bypassing conversational text entirely, guaranteeing correct database insertion.
-    \item \textbf{Psychological Circuit Breakers:} To prevent LangGraph recursion limits (ping-ponging), the Supervisor prompt contains dynamic stop-conditions: \textit{"If the last message in history is an AI confirmation, output FINISH."}
+  \item \textbf{Deterministic routing:} The Supervisor uses \texttt{withStructuredOutput} for intent classification and delegates execution to a specialized sub-agent.
+  \item \textbf{Cognitive isolation:} Specialized nodes receive constrained prompts without the full conversational overhead, reducing ambiguity during structured operations \cite{wu2023autogen}.
 \end{itemize}
 
-\newpage
+\subsection{Background Vision: Evaluator-Optimizer (Critic) Loop}
 
+Background inference is not limited by interactive response time, so schema correctness becomes the dominant concern. Macro extraction from images therefore uses an \textbf{Evaluator-Optimizer loop} \cite{shinn2023reflexion}.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[x=1cm,y=1cm]
+  
+  % Increased standard gap to 3.5cm and diamond gap to 4.0cm
+  \node[storage] (img) at (0,0) {S3 Image};
+  \node[app] (llava) at (3.5,0) {LLaVA\\Extractor};
+  \node[app] (critic) at (7.0,0) {Evaluator\\(Critic Node)};
+  \node[decision] (check) at (11.0,0) {Schema\\Valid?};
+  \node[data] (db) at (15.0,0) {PostgreSQL};
+
+  \begin{scope}[on background layer]
+    % Increased inner sep to contain the wider diamond elegantly 
+    \node[tier,fit=(llava)(critic)(check), inner sep=18pt] (loop) {};
+    \node[tierTitle, anchor=south] at ([yshift=5pt]loop.north) {REFLEXION PROCESSING LOOP - ASYNC};
+  \end{scope}
+
+  \draw[flow] (img.east) -- (llava.west);
+  \draw[flow] (llava.east) -- (critic.west);
+  \draw[flow] (critic.east) -- (check.west);
+  \draw[flow] (check.east) -- node[edgeLabel,above]{Yes} (db.west);
+  
+  % Dropped the return path further down to prevent intersection with the frame boundary
+  \draw[flowSoft] (check.south) -- ++(0,-1.5) -| node[edgeLabel,below,pos=0.25]{No: constraint feedback} (llava.south);
+  
+\end{tikzpicture}
+\caption{Schema validation creates a controlled retry path for vision-model output.}
+\end{figure}
+\FloatBarrier
+
+\begin{itemize}
+  \item \textbf{Validation \& retry:} A separate programmatic evaluator checks structural integrity. Invalid output is fed back to the vision model for a targeted retry, helping prevent malformed records from reaching the database \cite{shinn2023reflexion}.
+\end{itemize}
+
+% ==================== 4. API ====================
 \section{API Endpoints}
 
-The backend exposes a RESTful API, completely decoupled from the frontend, supporting JSON payloads and Bearer Token authorization.
+The backend exposes a RESTful API with JSON payloads and stateless JWT Bearer Token authorization.
+The endpoint surface is grouped by responsibility so that the operational role of each route is easy to scan.
 
-\subsection{Core Nutrition \& Aggregation}
-All listing APIs support standard pagination (\texttt{limit}, \texttt{page}) and specific time-range query parameters.
-
-\vspace{0.5em}
-\begin{tabularx}{\textwidth}{>{\bfseries}l >{\ttfamily}l X}
+\subsection{Authentication (Public Routes)}
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{>{\bfseries\sffamily}p{16mm} >{\ttfamily}p{39mm} Y}
 \toprule
 Method & Endpoint & Description \\
 \midrule
-GET & /nutrition/entries & Retrieves paginated food entries. Filterable via \texttt{startDate}, \texttt{endDate}, and \texttt{mealType}. \\
-POST & /nutrition/entries & Creates a new food entry, executes SQL insert, and increments the daily Redis Hash atomically. \\
-DELETE & /nutrition/entries/:id & Hard deletes an entry and recalculates the daily Redis cache. \\
-GET & /nutrition/reports/weekly & Returns a 7-day chronological aggregation of Calories, Protein, Carbs, and Fat for chart rendering. \\
+POST & /auth/register & Creates a new user profile and returns a session JWT. \\
+POST & /auth/login & Authenticates a user and returns a session JWT. \\
+POST & /auth/logout & Invalidates the current session token. \\
 \bottomrule
 \end{tabularx}
+\end{table}
 
-\subsection{AI \& Asynchronous Jobs}
-\vspace{0.5em}
-\begin{tabularx}{\textwidth}{>{\bfseries}l >{\ttfamily}l X}
+\subsection{Conversational AI \& Asynchronous Processing}
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{>{\bfseries\sffamily}p{16mm} >{\ttfamily\small}p{53mm} Y}
 \toprule
 Method & Endpoint & Description \\
 \midrule
-POST & /uploads/presigned-url & Generates a secure, temporary AWS S3 pre-signed URL for direct client-to-cloud image uploads, saving API bandwidth. \\
-GET & /jobs/:jobId & Polls Redis for the execution status of a BullMQ vision task (Pending, Completed, Failed). \\
 POST & /agent/chat & Accepts the \texttt{encryptedContext} token and user prompt. Streams real-time Server-Sent Events (SSE) back to the client. \\
+POST & /uploads/presigned-url & Generates a secure AWS S3 pre-signed URL for direct client-to-cloud uploads, avoiding server memory bloat. \\
+GET & /jobs/:jobId & Polls Redis for the execution status of a BullMQ vision task (Pending, Completed, Failed). \\
 \bottomrule
 \end{tabularx}
+\end{table}
+
+\subsection{Nutrition \& Health Goals}
+All list-based endpoints support pagination (\texttt{limit}, \texttt{page}) and date-range filtering.
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{>{\bfseries\sffamily}p{16mm} >{\ttfamily\small}p{53mm} Y}
+\toprule
+Method & Endpoint & Description \\
+\midrule
+POST & /nutrition/entries & Creates a new food entry, executes SQL insert, and increments the daily Redis Hash atomically. \\
+GET & /nutrition/entries & Retrieves paginated food entries. Filterable via \texttt{startDate}, \texttt{endDate}, and \texttt{mealType}. \\
+PUT & /nutrition/entries/:id & Modifies an existing food entry's macros or quantity. \\
+DELETE & /nutrition/entries/:id & Hard deletes an entry and recalculates the daily Redis cache. \\
+GET & /nutrition/goals & Retrieves the user's permanent daily calorie and macro targets. \\
+PUT & /nutrition/goals & Updates the user's customized health goals. \\
+GET & /nutrition/reports/weekly & Returns a 7-day chronological aggregation of Calories, Protein, Carbs, and Fat for frontend charting. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+% ==================== REFERENCES ====================
+\needspace{10\baselineskip}
+\addcontentsline{toc}{section}{References}
+\begin{thebibliography}{9}
+\small
+
+\bibitem{xu2020system}
+Xu, Alex.\
+\textit{System Design Interview: An Insider's Guide}.\
+ByteByteGo, 2020.
+
+\bibitem{wu2023autogen}
+Wu, Qingyun, et al.\
+``AutoGen: Enabling Next-Gen LLM Applications via Multi-Agent Conversation.''\
+\textit{arXiv preprint arXiv:2308.08155}, 2023.
+
+\bibitem{shinn2023reflexion}
+Shinn, Noah, et al.\
+``Reflexion: Language Agents with Verbal Reinforcement Learning.''\
+\textit{arXiv preprint arXiv:2303.11366}, 2023.
+
+\end{thebibliography}
 
 \end{document}
