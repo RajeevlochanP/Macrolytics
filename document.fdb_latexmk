@@ -1,5 +1,5 @@
 # Fdb version 4
-["pdflatex"] 1789325521.94321 "d:/projects/windows/Macrolytics/document.tex" "document.pdf" "document" 1789325525.41325 0
+["pdflatex"] 1789326178.31673 "d:/projects/windows/Macrolytics/document.tex" "document.pdf" "document" 1789326181.98632 0
   "c:/texlive/2026/texmf-dist/fonts/enc/dvips/lm/lm-ec.enc" 1788905798 2375 baa924870cfb487815765f9094cf3728 ""
   "c:/texlive/2026/texmf-dist/fonts/enc/dvips/lm/lm-rm.enc" 1788905798 2327 9d6df24f9c4f7368395224341a95523a ""
   "c:/texlive/2026/texmf-dist/fonts/enc/dvips/lm/lm-ts1.enc" 1788905798 3031 6c4d3515bf7115d8518af1c9ab97ca44 ""
@@ -234,11 +234,11 @@
   "c:/texlive/2026/texmf-var/fonts/map/pdftex/updmap/pdftex.map" 1788934934 5655996 795b756740562267ad2ae16e70168a76 ""
   "c:/texlive/2026/texmf-var/web2c/pdftex/pdflatex.fmt" 1788912997 3658229 f37604f5575039a63ba5ccfdc8f905e7 ""
   "c:/texlive/2026/texmf.cnf" 1788912756 713 e69b156964470283e0530f5060668171 ""
-  "d:/projects/windows/Macrolytics/document.tex" 1789325520 23562 37a98fa683b6edc0b7398d602caf6c92 ""
-  "document.aux" 1789325525 3179 1f1a602d09e5bf09adb99ab2f67972df "pdflatex"
-  "document.out" 1789325525 3224 04f7a47a1fe4e9353b90ccee8ed8d2c8 "pdflatex"
-  "document.tex" 1789325520 23562 37a98fa683b6edc0b7398d602caf6c92 ""
-  "document.toc" 1789325525 1334 9d6f2ace4012902f17aac735c43463cd "pdflatex"
+  "d:/projects/windows/Macrolytics/document.tex" 1789326177 23768 89d5367740638fc90e7e2ab4bf413e75 ""
+  "document.aux" 1789326181 3179 1f1a602d09e5bf09adb99ab2f67972df "pdflatex"
+  "document.out" 1789326181 3224 04f7a47a1fe4e9353b90ccee8ed8d2c8 "pdflatex"
+  "document.tex" 1789326177 23768 89d5367740638fc90e7e2ab4bf413e75 ""
+  "document.toc" 1789326181 1334 9d6f2ace4012902f17aac735c43463cd "pdflatex"
   (generated)
   "document.aux"
   "document.log"

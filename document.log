@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026) (preloaded format=pdflatex 2026.9.9)  14 SEP 2026 00:22
+This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026) (preloaded format=pdflatex 2026.9.9)  14 SEP 2026 00:32
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -890,56 +890,55 @@ Package microtype Info: Loading generic protrusion settings for font family
 (microtype)             `lmss' (encoding: T1).
 (microtype)             For optimal results, create family-specific settings.
 (microtype)             See the microtype manual for details.
- [1
-
-{c:/texlive/2026/texmf-var/fonts/map/pdftex/updmap/pdftex.map}{c:/texlive/2026/texmf-dist/fonts/enc/dvips/lm/lm-ec.enc}] (./document.toc
-LaTeX Font Info:    Trying to load font information for OT1+lmr on input line 3.
+LaTeX Font Info:    Trying to load font information for OT1+lmr on input line 180.
  (c:/texlive/2026/texmf-dist/tex/latex/lm/ot1lmr.fd
 File: ot1lmr.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
 )
-LaTeX Font Info:    Trying to load font information for OML+lmm on input line 3.
+LaTeX Font Info:    Trying to load font information for OML+lmm on input line 180.
  (c:/texlive/2026/texmf-dist/tex/latex/lm/omllmm.fd
 File: omllmm.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
 )
-LaTeX Font Info:    Trying to load font information for OMS+lmsy on input line 3.
+LaTeX Font Info:    Trying to load font information for OMS+lmsy on input line 180.
  (c:/texlive/2026/texmf-dist/tex/latex/lm/omslmsy.fd
 File: omslmsy.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
 )
-LaTeX Font Info:    Trying to load font information for OMX+lmex on input line 3.
+LaTeX Font Info:    Trying to load font information for OMX+lmex on input line 180.
  (c:/texlive/2026/texmf-dist/tex/latex/lm/omxlmex.fd
 File: omxlmex.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
 )
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <10.95> on input line 3.
+(Font)              <10.95> on input line 180.
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <8> on input line 3.
+(Font)              <8> on input line 180.
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <6> on input line 3.
-LaTeX Font Info:    Trying to load font information for U+msa on input line 3.
+(Font)              <6> on input line 180.
+LaTeX Font Info:    Trying to load font information for U+msa on input line 180.
  (c:/texlive/2026/texmf-dist/tex/latex/amsfonts/umsa.fd
 File: umsa.fd 2013/01/14 v3.01 AMS symbols A
 ) (c:/texlive/2026/texmf-dist/tex/latex/microtype/mt-msa.cfg
 File: mt-msa.cfg 2006/02/04 v1.1 microtype config. file: AMS symbols (a) (RS)
 )
-LaTeX Font Info:    Trying to load font information for U+msb on input line 3.
+LaTeX Font Info:    Trying to load font information for U+msb on input line 180.
  (c:/texlive/2026/texmf-dist/tex/latex/amsfonts/umsb.fd
 File: umsb.fd 2013/01/14 v3.01 AMS symbols B
 ) (c:/texlive/2026/texmf-dist/tex/latex/microtype/mt-msb.cfg
 File: mt-msb.cfg 2005/06/01 v1.0 microtype config. file: AMS symbols (b) (RS)
-))
+) [1
+
+{c:/texlive/2026/texmf-var/fonts/map/pdftex/updmap/pdftex.map}{c:/texlive/2026/texmf-dist/fonts/enc/dvips/lm/lm-ec.enc}] (./document.toc)
 \tf@toc=\write5
 \openout5 = `document.toc'.
 
 
 
 LaTeX Font Warning: Font shape `T1/lmss/m/sc' in size <10> not available
-(Font)              Font shape `T1/lmr/m/sc' tried instead on input line 199.
+(Font)              Font shape `T1/lmr/m/sc' tried instead on input line 203.
 
 Package microtype Info: Character `029' is missing
 (microtype)             in font `T1/lmr/m/sc/10'.
 (microtype)             Ignoring protrusion settings for this character.
 [1]
-Overfull \hbox (25.30481pt too wide) in paragraph at lines 417--418
+Overfull \hbox (25.30481pt too wide) in paragraph at lines 421--422
  [][] 
  []
 
@@ -947,15 +946,15 @@ Overfull \hbox (25.30481pt too wide) in paragraph at lines 417--418
 pdfTeX warning (ext4): destination with the same identifier (name{page.1}) has been already used, duplicate ignored
 <to be read again> 
                    \relax 
-l.433 
+l.437 
        [1
 
 ]
-LaTeX Font Info:    Trying to load font information for TS1+lmr on input line 435.
+LaTeX Font Info:    Trying to load font information for TS1+lmr on input line 439.
  (c:/texlive/2026/texmf-dist/tex/latex/lm/ts1lmr.fd
 File: ts1lmr.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
 )
-LaTeX Font Info:    Trying to load font information for T1+lmtt on input line 435.
+LaTeX Font Info:    Trying to load font information for T1+lmtt on input line 439.
  (c:/texlive/2026/texmf-dist/tex/latex/lm/t1lmtt.fd
 File: t1lmtt.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
 )
@@ -967,7 +966,7 @@ Package microtype Info: Loading generic protrusion settings for font family
 Underfull \vbox (badness 4608) has occurred while \output is active []
 
  [2{c:/texlive/2026/texmf-dist/fonts/enc/dvips/lm/lm-ts1.enc}{c:/texlive/2026/texmf-dist/fonts/enc/dvips/lm/lm-rm.enc}] [3]
-Overfull \hbox (34.94307pt too wide) in paragraph at lines 631--632
+Overfull \hbox (34.94307pt too wide) in paragraph at lines 635--636
  [][] 
  []
 
@@ -982,15 +981,15 @@ Package rerunfilecheck Info: File `document.out' has not changed.
 (rerunfilecheck)             Checksum: 04F7A47A1FE4E9353B90CCEE8ED8D2C8;3224.
  ) 
 Here is how much of TeX's memory you used:
- 35004 strings out of 467099
- 710170 string characters out of 5412503
+ 35006 strings out of 467099
+ 710228 string characters out of 5412503
  1177395 words of memory out of 5000000
- 63589 multiletter control sequences out of 15000+600000
+ 63591 multiletter control sequences out of 15000+600000
  704348 words of font info for 151 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
  116i,12n,121p,1229b,1186s stack positions out of 10000i,1000n,20000p,200000b,200000s
 <c:/texlive/2026/texmf-dist/fonts/type1/public/lm/lmbx10.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/lm/lmcsc10.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/lm/lmr10.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/lm/lmri10.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/lm/lmss10.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/lm/lmss17.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/lm/lmss8.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/lm/lmssbx10.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/lm/lmtt10.pfb>
-Output written on document.pdf (7 pages, 279068 bytes).
+Output written on document.pdf (7 pages, 280066 bytes).
 PDF statistics:
  316 PDF objects out of 1000 (max. 8388607)
  218 compressed objects within 3 object streams
