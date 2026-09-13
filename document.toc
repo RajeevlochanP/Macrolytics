@@ -3,7 +3,8 @@
 \contentsline {subsection}{\numberline {2.1}Decoupled Image Processing \& Direct AWS Uploads}{2}{subsection.2.1}%
 \contentsline {subsection}{\numberline {2.2}Stateless Web Tier via JOSE \& JWT Context}{2}{subsection.2.2}%
 \contentsline {subsection}{\numberline {2.3}Redis Key Isolation \& Event-Driven Pub/Sub}{2}{subsection.2.3}%
-\contentsline {subsection}{\numberline {2.4}SQL vs. NoSQL Database Selection}{3}{subsection.2.4}%
+\contentsline {subsection}{\numberline {2.4}SQL vs. NoSQL Database Selection}{2}{subsection.2.4}%
+\contentsline {subsection}{\numberline {2.5}Database Indexing \& Query Optimization}{3}{subsection.2.5}%
 \contentsline {section}{\numberline {3}Dual AI Agent Architectures}{3}{section.3}%
 \contentsline {subsection}{\numberline {3.1}Conversational Chat: Supervisor Multi-Agent Architecture}{3}{subsection.3.1}%
 \contentsline {subsection}{\numberline {3.2}Background Vision: Evaluator-Optimizer (Critic) Loop}{4}{subsection.3.2}%

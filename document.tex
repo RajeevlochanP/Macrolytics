@@ -462,6 +462,11 @@ can take 10--30 seconds per request. The web tier should therefore avoid owning 
   \item \textbf{Justification:} Nutrition tracking requires transactional integrity, time-range filtering, pagination, and historical aggregation. PostgreSQL provides the relational structure and ACID guarantees needed for consistent macro tracking \cite{xu2020system}.
 \end{itemize}
 
+\subsection{Database Indexing \& Query Optimization}
+\begin{itemize}
+  \item \textbf{Composite B-Tree Indexing:} To satisfy the assignment's time-range filtering and pagination requirements efficiently, composite indexes (\texttt{user\_id}, \texttt{logged\_at DESC}) were applied to the PostgreSQL schema. This prevents $O(N)$ full-table scans and ensures time-series queries execute in logarithmic time.
+\end{itemize}
+
 \begin{designbox}{Architecture at a glance}
 \begin{tabularx}{\linewidth}{>{\bfseries\sffamily}p{35mm} Y}
 Ingress & HTTPS requests enter through the load balancer; large images bypass the API and upload directly to S3. \\[2pt]
