@@ -3,85 +3,63 @@
 **Typeface India — Software Engineer Project Assignment**
 **Candidate:** Rajeev Lochan Perla (Roll No: S20230010198)
 
----
+> **Walkthrough:** [Watch the Demo Video](INSERT_YOUR_LOOM_LINK_HERE)
+> *Please watch this video first to see the project working end-to-end.*
 
-## Demo Video
+This project uses a distributed architecture with **AWS S3, SQS, Redis, BullMQ, and local Ollama instances**, so setting it up locally may take a few minutes (or longer if the internet is slow).
 
-Because this project utilizes a distributed architecture (AWS S3, SQS, Redis, BullMQ, and local Ollama instances), setting it up locally takes a few minutes (to hours if your internet is slow).
-
-> **[Walkthrough Video Here](INSERT_YOUR_LOOM_LINK_HERE)**
-> *Please watch this video first to see my project is completely working with no issues to the best of my knowledge.*
-
-## System Architecture
-
-This repository contains a detailed architectural breakdown of the system:
+The detailed system architecture is available here:
 
 **[Read the System Architecture Document](./document.pdf)**
 
-Please review this document to understand the core engineering decisions made for this assignment, including:
+It covers the core engineering decisions made for this assignment.
 
-* **Decoupled Image Processing:** Using AWS SQS and direct-to-S3 uploads to prevent Node.js OOM crashes at scale.
-* **Stateless Web Tier:** How conversational LLM memory is maintained securely via JWT/JOSE without server-side session memory bottlenecks.
-* **Dual AI Architectures:** The use of LangGraph (Supervisor Pattern) for real-time chat routing and Reflexion (Critic Loop) for background schema validation.
-* **O(1) Dashboard Reads:** Redis `hIncrByFloat` atomic caching strategies.
+---
 
-## Prerequisites
+## Setup
 
-Before running this project, ensure you have the following installed:
+### Prerequisites
+
+Make sure the following are installed:
 
 * **Docker** & **Docker Compose**
 * **Node.js** (v18+)
-* **Ollama** (for local LLM inference)
+* **Ollama**
 
-Pull the required LLM models locally using Ollama:
+Pull the required models:
 
 ```bash
 ollama run llama3.1
 ollama run llava
 ```
 
-## Environment Variables
+### Environment
 
-Create a `.env` file in the `Backend` directory.
+Create a `.env` file inside `Backend` by copying `.env.example`.
 
-The `.env` can be initialized by copying all contents of `.env.example`.
-
-> I have provided you the AWS related key values through Microsoft Form *Additional comments*. Just change the following key's values with the one I gave you.
+> I have provided the AWS-related key values through Microsoft Form *Additional comments*. Just replace the following values with the ones I provided.
 
 ```env
 AWS_REGION=<value I gave>
-
 AWS_ACCESS_KEY_ID=<value I gave>
-
 AWS_SECRET_ACCESS_KEY=<value I gave>
-
 S3_BUCKET_NAME=<value I gave>
-
 AWS_SQS_QUEUE_URL=<value I gave>
 ```
 
-Remaining all keys can be kept unchanged if you exactly follow below instructions for fast setup.
+The remaining values can be kept unchanged when following the setup below.
 
-## Installation & Running
+### Database & Redis
 
-### 1. Start Backing Services
-
-From the root of the project:
+From the project root:
 
 ```bash
 docker-compose up -d
 ```
 
-This spins up the database and cache:
+This starts **PostgreSQL** and **Redis**.
 
-* PostgreSQL
-* Redis
-
-### 2. Initialize Database Schema
-
-Because Docker only provisions the raw Postgres instance, you must manually apply the schema and composite indexes.
-
-Since the container name is explicitly defined in the compose file, copy and run the initialization script directly from your terminal:
+Then initialize the database:
 
 ```bash
 docker cp Backend/init.sql calorie_tracker_db:/init.sql
@@ -90,50 +68,63 @@ docker exec -it calorie_tracker_db \
   psql -U postgres -d calorie_tracker -f /init.sql
 ```
 
-### 3. Install Dependencies
+### Dependencies
 
-Install npm packages in both the backend and client directories:
+Install dependencies for both backend and client:
 
 ```bash
 cd Backend && npm install
 cd ../client && npm install
 ```
 
-### 4. Run Backend & Worker
+---
 
-Run the API server and the SQS background worker in two separate terminals.
+## Run
 
-**Terminal 1 — API Server**
+Start the backend API and SQS worker in separate terminals.
+
+**Terminal 1 — Backend**
 
 ```bash
 cd Backend
 node src/server.js
 ```
 
-**Terminal 2 — SQS Worker**
+**Terminal 2 — Worker**
 
 ```bash
 cd Backend
 node src/workers/nutrition.worker.js
 ```
 
-### 5. Run Frontend
-
-In the `client` directory:
+**Terminal 3 — Frontend**
 
 ```bash
+cd client
 npm run dev
 ```
 
-Then go to:
+Open:
 
 ```text
 http://localhost:5173
 ```
 
-to visit the website running.
+and the website will be running.
 
 ---
 
+## Assignment Requirements 
+
+* **Goal Setting:** Users can set and manage daily targets for calories, protein, carbs, fat, and weight.
+* **Meal Entry:** Supports logging food items by meal type (Breakfast, Lunch, Dinner, Snacks) with fields for name, quantity, and macros.
+* **Time-Range Listing & Pagination:** List APIs support pagination and allow filtering food entries by specific date ranges and meal types.
+* **Nutrition Reports & Graphs:** Displays weekly calorie intake trends, macronutrient breakdowns.
+* **AI-Powered Calorie Extraction:** Users can upload a photo of food to automatically extract and pre-fill nutritional information using AI image analysis.
+* **Architecture & Persistence:** The frontend communicates exclusively with a separate backend API, and all user data, goals, and food entries are persisted in a database.
+* **Bonus - Conversational Chat Interface:** An LLM-powered chat allows users to log meals, check goals, and get summaries through natural language.
+* **Bonus - Multi-User Support:** The system supports multiple independent users who can sign up, log in, and maintain their own private data.
+
 Thank you.
-(Hope you dont misuse my aws creds 🙂) 
+
+*Hope you don't misuse my AWS creds 🙂*
