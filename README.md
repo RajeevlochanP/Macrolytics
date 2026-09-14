@@ -3,7 +3,7 @@
 **Typeface India — Software Engineer Project Assignment**
 **Candidate:** Rajeev Lochan Perla (Roll No: S20230010198)
 
-> **Walkthrough:** [Watch the Demo Video](INSERT_YOUR_LOOM_LINK_HERE)
+> **Walkthrough:** [Watch the Demo Video](https://youtu.be/UFidAfu34X0)
 > *Please watch this video first to see the project working end-to-end.*
 
 This project uses a distributed architecture with **AWS S3, SQS, Redis, BullMQ, and local Ollama instances**, so setting it up locally may take a few minutes (or longer if the internet is slow).
@@ -86,15 +86,15 @@ Start the backend API and SQS worker in separate terminals.
 **Terminal 1 — Backend**
 
 ```bash
-cd Backend
-node src/server.js
+cd Backend/src
+node server.js
 ```
 
 **Terminal 2 — Worker**
 
 ```bash
-cd Backend
-node src/workers/nutrition.worker.js
+cd Backend/src/workers
+node nutrition.worker.js
 ```
 
 **Terminal 3 — Frontend**
